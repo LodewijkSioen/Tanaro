@@ -4,6 +4,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageId>Tanaro</PackageId>
+    <Description>A testing harness for Azure Functions inspired by Alba.</Description>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_PackTanaroGenerator</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,5 +15,19 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.OpenTelemetry" Version="1.2.0" />
     <PackageReference Include="OpenTelemetry.Api" Version="1.18.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- Build-order dependency only: its output is packed as an analyzer below, not referenced by this assembly. -->
+    <ProjectReference Include="..\Tanaro.Generators\Tanaro.Generators.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- Bundles Tanaro.Generators.dll into this package so consumers get scenario-method generation for free. -->
+  <Target Name="_PackTanaroGenerator">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(MSBuildThisFileDirectory)..\Tanaro.Generators\bin\$(Configuration)\netstandard2.0\Tanaro.Generators.dll">
+        <PackagePath>analyzers/dotnet/cs</PackagePath>
+      </TfmSpecificPackageFile>
+    </ItemGroup>
+  </Target>
 
 </Project>

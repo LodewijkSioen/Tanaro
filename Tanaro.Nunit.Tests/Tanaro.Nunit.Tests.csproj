@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Tanaro.DemoFunction\Tanaro.DemoFunction.csproj" />
     <ProjectReference Include="..\Tanaro\Tanaro.csproj" />
+    <ProjectReference Include="..\Tanaro.Generators\Tanaro.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
