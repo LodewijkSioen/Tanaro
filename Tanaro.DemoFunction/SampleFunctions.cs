@@ -20,4 +20,8 @@ public class SampleFunctions
     [Function("SampleWithContext")]
     public string WithContext([EventHubTrigger("hub")] EventData[] eventData, FunctionContext context) =>
         $"{eventData.Length}:{context.InvocationId}";
+
+    [Function("SampleWithContextItem")]
+    public string WithContextItem([EventHubTrigger("hub")] EventData[] eventData, FunctionContext context) =>
+        context.Items.TryGetValue("test", out var value) ? (string)value! : "missing";
 }
