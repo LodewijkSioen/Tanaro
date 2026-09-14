@@ -14,7 +14,11 @@ internal sealed record FunctionMethodModel(
     string DeclaringTypeName,
     string MethodName,
     string FunctionName,
+    string RawFunctionName,
     ReturnShape ReturnShape,
     string? ReturnTypeFullyQualifiedName,
     string ParameterList,
-    string ArgumentList);
+    string ArgumentList,
+    string ParametersInitializer,
+    string InputBindingsInitializer,
+    string OutputBindingsInitializer);

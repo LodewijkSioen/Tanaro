@@ -23,5 +23,17 @@ public class SampleFunctions
 
     [Function("SampleWithContextItem")]
     public string WithContextItem([EventHubTrigger("hub")] EventData[] eventData, FunctionContext context) =>
-        context.Items.TryGetValue("test", out var value) ? (string)value! : "missing";
+        context.Items.TryGetValue("test", out var value) ? (string)value : "missing";
+
+    [Function("SampleWithMiddlewareItem")]
+    public string WithMiddlewareItem([EventHubTrigger("hub")] EventData[] eventData, FunctionContext context) =>
+        context.Items.TryGetValue("middleware", out var value) ? (string)value : "missing";
+
+    [Function("SampleWithBindingData")]
+    public string WithBindingData([EventHubTrigger("hub")] EventData[] eventData, FunctionContext context) =>
+        context.BindingContext.BindingData.TryGetValue("test", out var value) ? (string)value! : "missing";
+
+    [Function("SampleWithRetryContext")]
+    public string WithRetryContext([EventHubTrigger("hub")] EventData[] eventData, FunctionContext context) =>
+        $"{context.RetryContext.RetryCount}/{context.RetryContext.MaxRetryCount}";
 }

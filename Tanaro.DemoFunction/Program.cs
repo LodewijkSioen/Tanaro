@@ -6,6 +6,9 @@ using Microsoft.Extensions.Hosting;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
+builder.UseMiddleware<Tanaro.DemoFunction.StampingMiddleware>();
+builder.UseMiddleware<Tanaro.DemoFunction.ShortCircuitingMiddleware>();
+
 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING")))
 {
     builder.Services.AddOpenTelemetry()

@@ -1,20 +1,19 @@
 ﻿using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.DependencyInjection;
 using System.Collections;
 using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace Tanaro;
 
-public class DummyFunctionContext(TraceContext traceContext) : FunctionContext
+public class DummyFunctionContext(TraceContext traceContext, IServiceProvider instanceServices, FunctionDefinition functionDefinition) : FunctionContext
 {
     public override string InvocationId { get; } = Guid.NewGuid().ToString();
-    public override string FunctionId { get; } = string.Empty;
+    public override string FunctionId { get; } = functionDefinition.Id;
     public override TraceContext TraceContext { get; } = traceContext;
     public override BindingContext BindingContext { get; } = new DummyBindingContext();
     public override RetryContext RetryContext { get; } = new DummyRetryContext();
-    public override IServiceProvider InstanceServices { get; set; } = new ServiceCollection().BuildServiceProvider();
-    public override FunctionDefinition FunctionDefinition { get; } = new DummyFunctionDefinition();
+    public override IServiceProvider InstanceServices { get; set; } = instanceServices;
+    public override FunctionDefinition FunctionDefinition { get; } = functionDefinition;
     public override IDictionary<object, object> Items { get; set; } = new Dictionary<object, object>();
     public override IInvocationFeatures Features { get; } = new DummyInvocationFeatures();
 }
@@ -27,24 +26,51 @@ public class DummyTraceContext(Activity? activity) : TraceContext
 
 public class DummyBindingContext : BindingContext
 {
-    public override IReadOnlyDictionary<string, object?> BindingData { get; } = new Dictionary<string, object?>();
+    private readonly Dictionary<string, object?> _bindingData = [];
+
+    public override IReadOnlyDictionary<string, object?> BindingData => _bindingData;
+
+    internal void Set(string key, object? value) => _bindingData[key] = value;
 }
 
 public class DummyRetryContext : RetryContext
 {
-    public override int RetryCount { get; } = 0;
-    public override int MaxRetryCount { get; } = 0;
+    private int _retryCount;
+    private int _maxRetryCount;
+
+    public override int RetryCount => _retryCount;
+    public override int MaxRetryCount => _maxRetryCount;
+
+    internal void Set(int retryCount, int maxRetryCount)
+    {
+        _retryCount = retryCount;
+        _maxRetryCount = maxRetryCount;
+    }
 }
 
-public class DummyFunctionDefinition : FunctionDefinition
+public class DummyBindingMetadata(string name, string type, BindingDirection direction) : BindingMetadata
 {
-    public override string Id { get; } = string.Empty;
-    public override string Name { get; } = string.Empty;
-    public override string PathToAssembly { get; } = string.Empty;
-    public override string EntryPoint { get; } = string.Empty;
-    public override IImmutableDictionary<string, BindingMetadata> InputBindings { get; } = ImmutableDictionary<string, BindingMetadata>.Empty;
-    public override IImmutableDictionary<string, BindingMetadata> OutputBindings { get; } = ImmutableDictionary<string, BindingMetadata>.Empty;
-    public override ImmutableArray<FunctionParameter> Parameters { get; } = ImmutableArray<FunctionParameter>.Empty;
+    public override string Name { get; } = name;
+    public override string Type { get; } = type;
+    public override BindingDirection Direction { get; } = direction;
+}
+
+public class DummyFunctionDefinition(
+    string name = "",
+    string id = "",
+    string entryPoint = "",
+    string pathToAssembly = "",
+    IImmutableDictionary<string, BindingMetadata>? inputBindings = null,
+    IImmutableDictionary<string, BindingMetadata>? outputBindings = null,
+    ImmutableArray<FunctionParameter> parameters = default) : FunctionDefinition
+{
+    public override string Id { get; } = id;
+    public override string Name { get; } = name;
+    public override string PathToAssembly { get; } = pathToAssembly;
+    public override string EntryPoint { get; } = entryPoint;
+    public override IImmutableDictionary<string, BindingMetadata> InputBindings { get; } = inputBindings ?? ImmutableDictionary<string, BindingMetadata>.Empty;
+    public override IImmutableDictionary<string, BindingMetadata> OutputBindings { get; } = outputBindings ?? ImmutableDictionary<string, BindingMetadata>.Empty;
+    public override ImmutableArray<FunctionParameter> Parameters { get; } = parameters.IsDefault ? ImmutableArray<FunctionParameter>.Empty : parameters;
 }
 
 public class DummyInvocationFeatures : IInvocationFeatures

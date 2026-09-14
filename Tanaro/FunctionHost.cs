@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Invocation;
+using Microsoft.Azure.Functions.Worker.Middleware;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Trace;
@@ -28,14 +30,14 @@ public class FunctionHost
     public FunctionScenarios<TFunction> For<TFunction>() where TFunction : class => new(this);
 
     // Public (not internal) because generated hook methods live in the consumer's assembly.
-    public async Task<TResult> RunScenario<TFunction, TResult, TScenario>(Action<TScenario> configure, Func<FunctionContext, TScenario> createScenario)
+    public async Task<TResult> RunScenario<TFunction, TResult, TScenario>(Action<TScenario> configure, Func<FunctionContext, TScenario> createScenario, FunctionDefinition definition)
         where TFunction : class
         where TScenario : Scenario<TFunction, TResult>
     {
         using var scope = _factory.Services.CreateScope();
         using var rootActivity = StartActivity(scope.ServiceProvider);
 
-        var scenario = createScenario(BuildFunctionContext(rootActivity));
+        var scenario = createScenario(BuildFunctionContext(rootActivity, scope.ServiceProvider, definition));
         configure(scenario);
 
         if (scenario.Invocation is null)
@@ -44,18 +46,34 @@ public class FunctionHost
         }
 
         var function = ActivatorUtilities.GetServiceOrCreateInstance<TFunction>(scope.ServiceProvider);
-        return await scenario.Invocation(function, scenario.FunctionContext);
+
+        var executed = false;
+        TResult? result = default;
+        scenario.FunctionContext.Features.Set<IFunctionExecutor>(new DelegateFunctionExecutor(async ctx =>
+        {
+            result = await scenario.Invocation(function, ctx);
+            executed = true;
+        }));
+
+        await RunPipeline(scope.ServiceProvider, scenario.FunctionContext);
+
+        if (!executed)
+        {
+            throw new InvalidOperationException("The function was not invoked - a middleware short-circuited the pipeline before execution.");
+        }
+
+        return result!;
     }
 
     // Public (not internal) because generated hook methods live in the consumer's assembly.
-    public async Task RunScenario<TFunction, TScenario>(Action<TScenario> configure, Func<FunctionContext, TScenario> createScenario)
+    public async Task RunScenario<TFunction, TScenario>(Action<TScenario> configure, Func<FunctionContext, TScenario> createScenario, FunctionDefinition definition)
         where TFunction : class
         where TScenario : Scenario<TFunction>
     {
         using var scope = _factory.Services.CreateScope();
         using var rootActivity = StartActivity(scope.ServiceProvider);
 
-        var scenario = createScenario(BuildFunctionContext(rootActivity));
+        var scenario = createScenario(BuildFunctionContext(rootActivity, scope.ServiceProvider, definition));
         configure(scenario);
 
         if (scenario.Invocation is null)
@@ -64,7 +82,34 @@ public class FunctionHost
         }
 
         var function = ActivatorUtilities.GetServiceOrCreateInstance<TFunction>(scope.ServiceProvider);
-        await scenario.Invocation(function, scenario.FunctionContext);
+
+        var executed = false;
+        scenario.FunctionContext.Features.Set<IFunctionExecutor>(new DelegateFunctionExecutor(async ctx =>
+        {
+            await scenario.Invocation(function, ctx);
+            executed = true;
+        }));
+
+        await RunPipeline(scope.ServiceProvider, scenario.FunctionContext);
+
+        if (!executed)
+        {
+            throw new InvalidOperationException("The function was not invoked - a middleware short-circuited the pipeline before execution.");
+        }
+    }
+
+    // Runs the app's own registered middleware (if any) plus the SDK's built-in Output/Execution middleware.
+    private static async Task RunPipeline(IServiceProvider services, FunctionContext context)
+    {
+        var pipeline = services.GetRequiredService<FunctionExecutionDelegate>();
+        try
+        {
+            await pipeline(context);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("IFunctionBindingsFeature"))
+        {
+            // The SDK's built-in OutputBindingsMiddleware always runs and needs an internal feature Tanaro doesn't populate; harmless to ignore.
+        }
     }
 
     private static Activity? StartActivity(IServiceProvider services)
@@ -74,8 +119,8 @@ public class FunctionHost
         return Metrics.Source.StartActivity();
     }
 
-    private static DummyFunctionContext BuildFunctionContext(Activity? rootActivity) =>
-        new(new DummyTraceContext(rootActivity));
+    private static DummyFunctionContext BuildFunctionContext(Activity? rootActivity, IServiceProvider instanceServices, FunctionDefinition definition) =>
+        new(new DummyTraceContext(rootActivity), instanceServices, definition);
 
     public void Dispose()
     {

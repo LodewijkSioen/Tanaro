@@ -29,6 +29,18 @@ public class Scenario<TFunction>(FunctionContext functionContext)
         configure(FunctionContext);
         return this;
     }
+
+    public Scenario<TFunction> WithBindingData(string key, object? value)
+    {
+        ((DummyBindingContext)FunctionContext.BindingContext).Set(key, value);
+        return this;
+    }
+
+    public Scenario<TFunction> WithRetryContext(int retryCount, int maxRetryCount)
+    {
+        ((DummyRetryContext)FunctionContext.RetryContext).Set(retryCount, maxRetryCount);
+        return this;
+    }
 }
 
 /// <summary>
@@ -51,6 +63,18 @@ public class Scenario<TFunction, TResult>(FunctionContext functionContext)
         }
 
         Invocation = invocation;
+    }
+
+    public Scenario<TFunction, TResult> WithBindingData(string key, object? value)
+    {
+        ((DummyBindingContext)FunctionContext.BindingContext).Set(key, value);
+        return this;
+    }
+
+    public Scenario<TFunction, TResult> WithRetryContext(int retryCount, int maxRetryCount)
+    {
+        ((DummyRetryContext)FunctionContext.RetryContext).Set(retryCount, maxRetryCount);
+        return this;
     }
 
     public Scenario<TFunction, TResult> WithContext(Action<FunctionContext> configure)
