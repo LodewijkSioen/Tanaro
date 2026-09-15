@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
 namespace Tanaro;
@@ -19,7 +18,6 @@ public class FunctionApplicationFactory<T> : IFunctionApplicationFactory
         var factory = HostFactoryResolver.ResolveHostFactory(typeof(T).Assembly, hostBuilder =>
         {
             hostBuilder.ConfigureHostConfiguration(config => config.AddInMemoryCollection(settings));
-            hostBuilder.ConfigureServices(s => s.RemoveAll<IHostedService>());
             configuration(hostBuilder);
         });
 
