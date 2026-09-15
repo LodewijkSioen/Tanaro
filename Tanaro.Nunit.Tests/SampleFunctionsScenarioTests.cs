@@ -126,5 +126,60 @@ public class SampleFunctionsScenarioTests
                 s.Execute([eventData]).WithContext(ctx => ctx.Items["shortCircuit"] = true)),
             Throws.InvalidOperationException);
     }
+
+    [Test]
+    public async Task FunctionDefinitionOutputBindingsAreExtractedFromReturnTypeProperties()
+    {
+        var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
+        FunctionContext? capturedContext = null;
+
+        await AppUnderTest.Host.For<SampleFunctions>().SampleWithMultiOutput(s =>
+            s.Execute([eventData]).WithContext(ctx => capturedContext = ctx));
+
+        var binding = capturedContext!.FunctionDefinition.OutputBindings["Message"];
+        Assert.That(binding.Type, Is.EqualTo("eventHub"));
+        Assert.That(binding.Direction, Is.EqualTo(BindingDirection.Out));
+        Assert.That(capturedContext.FunctionDefinition.OutputBindings.ContainsKey("Note"), Is.False);
+    }
+
+    [Test]
+    public async Task OutputBindingValueIsCapturedAfterInvocation()
+    {
+        var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
+        FunctionContext? capturedContext = null;
+
+        await AppUnderTest.Host.For<SampleFunctions>().SampleWithMultiOutput(s =>
+            s.Execute([eventData]).WithContext(ctx => capturedContext = ctx));
+
+        var outputBindingData = ((DummyFunctionContext)capturedContext!).OutputBindingData;
+        Assert.That(outputBindingData["Message"], Is.EqualTo("x"));
+        Assert.That(outputBindingData.ContainsKey("Note"), Is.False);
+    }
+
+    [Test]
+    public async Task NullOutputBindingValueIsNotCaptured()
+    {
+        var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
+        FunctionContext? capturedContext = null;
+
+        await AppUnderTest.Host.For<SampleFunctions>().SampleWithNullOutput(s =>
+            s.Execute([eventData]).WithContext(ctx => capturedContext = ctx));
+
+        Assert.That(((DummyFunctionContext)capturedContext!).OutputBindingData.ContainsKey("Message"), Is.False);
+    }
+
+    [Test]
+    public async Task ReturnBoundFunctionsDoNotPopulateOutputBindingData()
+    {
+        var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
+        FunctionContext? capturedContext = null;
+
+        var result = await AppUnderTest.Host.For<SampleFunctions>().SampleReturnBinding(s =>
+            s.Execute([eventData]).WithContext(ctx => capturedContext = ctx));
+
+        Assert.That(result, Is.EqualTo("x"));
+        Assert.That(capturedContext!.FunctionDefinition.OutputBindings.ContainsKey("$return"), Is.True);
+        Assert.That(((DummyFunctionContext)capturedContext).OutputBindingData, Is.Empty);
+    }
 }
 

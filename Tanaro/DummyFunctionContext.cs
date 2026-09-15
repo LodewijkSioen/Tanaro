@@ -16,6 +16,13 @@ public class DummyFunctionContext(TraceContext traceContext, IServiceProvider in
     public override FunctionDefinition FunctionDefinition { get; } = functionDefinition;
     public override IDictionary<object, object> Items { get; set; } = new Dictionary<object, object>();
     public override IInvocationFeatures Features { get; } = new DummyInvocationFeatures();
+
+    private readonly Dictionary<string, object?> _outputBindingData = [];
+
+    // Populated by OutputBindingCapture after invocation; only contains entries for property-based (multi-output) bindings.
+    public IReadOnlyDictionary<string, object?> OutputBindingData => _outputBindingData;
+
+    internal void SetOutputBinding(string name, object? value) => _outputBindingData[name] = value;
 }
 
 public class DummyTraceContext(Activity? activity) : TraceContext

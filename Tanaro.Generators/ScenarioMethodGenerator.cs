@@ -102,6 +102,20 @@ public class ScenarioMethodGenerator : IIncrementalGenerator
             {
                 outputBindingInitializers.Add($"new global::System.Collections.Generic.KeyValuePair<string, global::Microsoft.Azure.Functions.Worker.BindingMetadata>(\"$return\", new global::Tanaro.DummyBindingMetadata(\"$return\", \"{returnBindingType}\", global::Microsoft.Azure.Functions.Worker.BindingDirection.Out))");
             }
+            else if (GetUnwrappedReturnType(method.ReturnType) is INamedTypeSymbol returnTypeSymbol)
+            {
+                // Multi-output POCO: each output-bound property (e.g. [EventHubOutput]) becomes its own named binding.
+                foreach (var property in returnTypeSymbol.GetMembers().OfType<IPropertySymbol>())
+                {
+                    var propertyBindingAttribute = property.GetAttributes().FirstOrDefault(a => TryGetBindingInfo(a.AttributeClass, out _, out _));
+                    if (propertyBindingAttribute is not null &&
+                        TryGetBindingInfo(propertyBindingAttribute.AttributeClass, out var propertyBindingType, out var propertyIsOutput) &&
+                        propertyIsOutput)
+                    {
+                        outputBindingInitializers.Add($"new global::System.Collections.Generic.KeyValuePair<string, global::Microsoft.Azure.Functions.Worker.BindingMetadata>(\"{property.Name}\", new global::Tanaro.DummyBindingMetadata(\"{property.Name}\", \"{propertyBindingType}\", global::Microsoft.Azure.Functions.Worker.BindingDirection.Out))");
+                    }
+                }
+            }
 
             builder.Add(new FunctionMethodModel(
                 type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
@@ -175,6 +189,23 @@ public class ScenarioMethodGenerator : IIncrementalGenerator
         keyValueInitializers.Count == 0
             ? "global::System.Collections.Immutable.ImmutableDictionary<string, global::Microsoft.Azure.Functions.Worker.BindingMetadata>.Empty"
             : $"global::System.Collections.Immutable.ImmutableDictionary.CreateRange(new global::System.Collections.Generic.KeyValuePair<string, global::Microsoft.Azure.Functions.Worker.BindingMetadata>[] {{ {string.Join(", ", keyValueInitializers)} }})";
+
+    // Unwraps Task<T>/Task/void the same way GetReturnShape does, so return-type properties can be scanned for output bindings.
+    private static ITypeSymbol? GetUnwrappedReturnType(ITypeSymbol returnType)
+    {
+        if (returnType.SpecialType == SpecialType.System_Void)
+        {
+            return null;
+        }
+
+        if (returnType is INamedTypeSymbol { Name: "Task" } named &&
+            named.ContainingNamespace.ToDisplayString() == "System.Threading.Tasks")
+        {
+            return named.IsGenericType ? named.TypeArguments[0] : null;
+        }
+
+        return returnType;
+    }
 
     private static (ReturnShape Shape, string? ReturnTypeArgument) GetReturnShape(ITypeSymbol returnType)
     {

@@ -36,4 +36,31 @@ public class SampleFunctions
     [Function("SampleWithRetryContext")]
     public string WithRetryContext([EventHubTrigger("hub")] EventData[] eventData, FunctionContext context) =>
         $"{context.RetryContext.RetryCount}/{context.RetryContext.MaxRetryCount}";
+
+    [Function("SampleReturnBinding")]
+    [EventHubOutput("hub")]
+    public string ReturnBinding([EventHubTrigger("hub")] EventData[] eventData) =>
+        string.Join(',', eventData.Select(e => e.EventBody.ToString()));
+
+    [Function("SampleWithMultiOutput")]
+    public MultiOutputResult MultiOutput([EventHubTrigger("hub")] EventData[] eventData) => new()
+    {
+        Message = string.Join(',', eventData.Select(e => e.EventBody.ToString())),
+        Note = "note"
+    };
+
+    [Function("SampleWithNullOutput")]
+    public MultiOutputResult NullOutput([EventHubTrigger("hub")] EventData[] eventData) => new()
+    {
+        Message = null,
+        Note = "note"
+    };
+}
+
+public class MultiOutputResult
+{
+    [EventHubOutput("hub")]
+    public string? Message { get; set; }
+
+    public string? Note { get; set; }
 }

@@ -62,6 +62,8 @@ public class FunctionHost
             throw new InvalidOperationException("The function was not invoked - a middleware short-circuited the pipeline before execution.");
         }
 
+        OutputBindingCapture.Capture(definition, result, (DummyFunctionContext)scenario.FunctionContext);
+
         return result!;
     }
 
