@@ -37,6 +37,10 @@ public class SampleFunctions
     public string WithRetryContext([EventHubTrigger("hub")] EventData[] eventData, FunctionContext context) =>
         $"{context.RetryContext.RetryCount}/{context.RetryContext.MaxRetryCount}";
 
+    [Function("SampleWithCancellationToken")]
+    public string WithCancellationToken([EventHubTrigger("hub")] EventData[] eventData, CancellationToken cancellationToken) =>
+        cancellationToken.IsCancellationRequested ? "cancelled" : "not-cancelled";
+
     [Function("SampleReturnBinding")]
     [EventHubOutput("hub")]
     public string ReturnBinding([EventHubTrigger("hub")] EventData[] eventData) =>

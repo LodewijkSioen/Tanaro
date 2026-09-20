@@ -117,6 +117,27 @@ public class SampleFunctionsScenarioTests
     }
 
     [Test]
+    public async Task CancellationTokenDefaultsToNotCancelled()
+    {
+        var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
+
+        var result = await AppUnderTest.Host.For<SampleFunctions>().SampleWithCancellationToken(s => s.Execute([eventData]));
+
+        Assert.That(result, Is.EqualTo("not-cancelled"));
+    }
+
+    [Test]
+    public async Task WithCancellationTokenIsVisibleDuringInvocation()
+    {
+        var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
+
+        var result = await AppUnderTest.Host.For<SampleFunctions>().SampleWithCancellationToken(s =>
+            s.Execute([eventData]).WithCancellationToken(new CancellationToken(canceled: true)));
+
+        Assert.That(result, Is.EqualTo("cancelled"));
+    }
+
+    [Test]
     public void ShortCircuitingMiddlewareReportsFunctionNotInvoked()
     {
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));

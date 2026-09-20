@@ -41,6 +41,12 @@ public class Scenario<TFunction>(FunctionContext functionContext)
         ((DummyRetryContext)FunctionContext.RetryContext).Set(retryCount, maxRetryCount);
         return this;
     }
+
+    public Scenario<TFunction> WithCancellationToken(CancellationToken token)
+    {
+        ((DummyFunctionContext)FunctionContext).SetCancellationToken(token);
+        return this;
+    }
 }
 
 /// <summary>
@@ -74,6 +80,12 @@ public class Scenario<TFunction, TResult>(FunctionContext functionContext)
     public Scenario<TFunction, TResult> WithRetryContext(int retryCount, int maxRetryCount)
     {
         ((DummyRetryContext)FunctionContext.RetryContext).Set(retryCount, maxRetryCount);
+        return this;
+    }
+
+    public Scenario<TFunction, TResult> WithCancellationToken(CancellationToken token)
+    {
+        ((DummyFunctionContext)FunctionContext).SetCancellationToken(token);
         return this;
     }
 

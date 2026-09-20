@@ -12,6 +12,7 @@ public class ScenarioMethodGenerator : IIncrementalGenerator
     private const string FunctionUnderTestAttributeMetadataName = "Tanaro.FunctionUnderTestAttribute`1";
     private const string FunctionAttributeMetadataName = "Microsoft.Azure.Functions.Worker.FunctionAttribute";
     private const string FunctionContextMetadataName = "global::Microsoft.Azure.Functions.Worker.FunctionContext";
+    private const string CancellationTokenMetadataName = "global::System.Threading.CancellationToken";
     private const string BindingAttributeMetadataName = "Microsoft.Azure.Functions.Worker.Extensions.Abstractions.BindingAttribute";
     private const string OutputBindingAttributeMetadataName = "Microsoft.Azure.Functions.Worker.Extensions.Abstractions.OutputBindingAttribute";
 
@@ -89,6 +90,13 @@ public class ScenarioMethodGenerator : IIncrementalGenerator
                 {
                     // The scenario's own FunctionContext is used directly - it's not something a caller can easily build.
                     argumentParts.Add("ctx");
+                    continue;
+                }
+
+                if (parameterType == CancellationTokenMetadataName)
+                {
+                    // Mirrors the real SDK's CancellationTokenConverter, which fills this parameter from FunctionContext.CancellationToken.
+                    argumentParts.Add("ctx.CancellationToken");
                     continue;
                 }
 
