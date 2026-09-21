@@ -274,8 +274,8 @@ public class ScenarioMethodGenerator : IIncrementalGenerator
 
         var scenarioTypeName = $"{method.FunctionName}Scenario";
         var hostReturnType = method.ReturnShape is ReturnShape.Value or ReturnShape.TaskOfValue
-            ? $"global::System.Threading.Tasks.Task<{method.ReturnTypeFullyQualifiedName}>"
-            : "global::System.Threading.Tasks.Task";
+            ? $"global::System.Threading.Tasks.Task<global::Tanaro.ScenarioResult<{method.ReturnTypeFullyQualifiedName}>>"
+            : "global::System.Threading.Tasks.Task<global::Tanaro.ScenarioResult>";
         var runScenarioTypeArguments = $"{resultTypeArguments}, {scenarioTypeName}";
         var entryPoint = $"{method.DeclaringTypeFullyQualifiedName.Replace("global::", string.Empty)}.{method.MethodName}";
         var functionDefinition = $"new global::Tanaro.DummyFunctionDefinition(name: \"{method.RawFunctionName}\", id: \"{method.RawFunctionName}\", entryPoint: \"{entryPoint}\", pathToAssembly: typeof({method.DeclaringTypeFullyQualifiedName}).Assembly.Location, inputBindings: {method.InputBindingsInitializer}, outputBindings: {method.OutputBindingsInitializer}, parameters: {method.ParametersInitializer})";

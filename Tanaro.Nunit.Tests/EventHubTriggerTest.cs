@@ -14,6 +14,6 @@ public class EventHubTriggerTest
         var result = await AppUnderTest.Host
             .For<EventHubFunction>()
             .EventHubFunction(s => s.Execute([eventData]));
-        Assert.That(result, Is.EqualTo("Hello World"));
+        Assert.That(result.Value, Is.EqualTo("Hello World"));
     }
 }

@@ -31,7 +31,7 @@ public class FunctionHost
     public FunctionScenarios<TFunction> For<TFunction>() where TFunction : class => new(this);
 
     // Public (not internal) because generated hook methods live in the consumer's assembly.
-    public async Task<TResult> RunScenario<TFunction, TResult, TScenario>(Action<TScenario> configure, Func<FunctionContext, TScenario> createScenario, FunctionDefinition definition)
+    public async Task<ScenarioResult<TResult>> RunScenario<TFunction, TResult, TScenario>(Action<TScenario> configure, Func<FunctionContext, TScenario> createScenario, FunctionDefinition definition)
         where TFunction : class
         where TScenario : Scenario<TFunction, TResult>
     {
@@ -48,31 +48,38 @@ public class FunctionHost
 
         var function = ActivatorUtilities.GetServiceOrCreateInstance<TFunction>(scope.ServiceProvider);
 
-        var executed = false;
+        var invoked = false;
         TResult? result = default;
         scenario.FunctionContext.Features.Set<IFunctionExecutor>(new DelegateFunctionExecutor(async ctx =>
         {
+            invoked = true;
             result = await scenario.Invocation(function, ctx);
-            executed = true;
         }));
 
-        using (BeginInvocationScope(scope.ServiceProvider, scenario.FunctionContext.InvocationId))
+        try
         {
-            await RunPipeline(scope.ServiceProvider, scenario.FunctionContext);
+            using (BeginInvocationScope(scope.ServiceProvider, scenario.FunctionContext.InvocationId))
+            {
+                await RunPipeline(scope.ServiceProvider, scenario.FunctionContext);
+            }
+        }
+        catch (Exception ex)
+        {
+            return new ScenarioResult<TResult>(default, ex, invoked);
         }
 
-        if (!executed)
+        if (!invoked)
         {
-            throw new InvalidOperationException("The function was not invoked - a middleware short-circuited the pipeline before execution.");
+            return new ScenarioResult<TResult>(default, null, invoked: false);
         }
 
         OutputBindingCapture.Capture(definition, result, (DummyFunctionContext)scenario.FunctionContext);
 
-        return result!;
+        return new ScenarioResult<TResult>(result, null, invoked: true);
     }
 
     // Public (not internal) because generated hook methods live in the consumer's assembly.
-    public async Task RunScenario<TFunction, TScenario>(Action<TScenario> configure, Func<FunctionContext, TScenario> createScenario, FunctionDefinition definition)
+    public async Task<ScenarioResult> RunScenario<TFunction, TScenario>(Action<TScenario> configure, Func<FunctionContext, TScenario> createScenario, FunctionDefinition definition)
         where TFunction : class
         where TScenario : Scenario<TFunction>
     {
@@ -89,22 +96,26 @@ public class FunctionHost
 
         var function = ActivatorUtilities.GetServiceOrCreateInstance<TFunction>(scope.ServiceProvider);
 
-        var executed = false;
+        var invoked = false;
         scenario.FunctionContext.Features.Set<IFunctionExecutor>(new DelegateFunctionExecutor(async ctx =>
         {
+            invoked = true;
             await scenario.Invocation(function, ctx);
-            executed = true;
         }));
 
-        using (BeginInvocationScope(scope.ServiceProvider, scenario.FunctionContext.InvocationId))
+        try
         {
-            await RunPipeline(scope.ServiceProvider, scenario.FunctionContext);
+            using (BeginInvocationScope(scope.ServiceProvider, scenario.FunctionContext.InvocationId))
+            {
+                await RunPipeline(scope.ServiceProvider, scenario.FunctionContext);
+            }
+        }
+        catch (Exception ex)
+        {
+            return new ScenarioResult(ex, invoked);
         }
 
-        if (!executed)
-        {
-            throw new InvalidOperationException("The function was not invoked - a middleware short-circuited the pipeline before execution.");
-        }
+        return new ScenarioResult(null, invoked);
     }
 
     // Runs the app's own registered middleware (if any) plus the SDK's built-in Output/Execution middleware.

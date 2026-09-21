@@ -14,7 +14,7 @@ public class SampleFunctionsScenarioTests
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
         var result = await AppUnderTest.Host.For<SampleFunctions>().SampleTaskOfValue(s => s.Execute([eventData]));
-        Assert.That(result, Is.EqualTo(1));
+        Assert.That(result.Value, Is.EqualTo(1));
     }
 
     [Test]
@@ -39,7 +39,7 @@ public class SampleFunctionsScenarioTests
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
         var result = await AppUnderTest.Host.For<SampleFunctions>().SampleWithContext(s => s.Execute([eventData]));
-        Assert.That(result, Does.StartWith("1:"));
+        Assert.That(result.Value, Does.StartWith("1:"));
     }
 
     [Test]
@@ -83,7 +83,7 @@ public class SampleFunctionsScenarioTests
                 .WithContext(ctx => ctx.Items.Add("test", "item"));
         });
 
-        Assert.That(result, Is.EqualTo("item"));
+        Assert.That(result.Value, Is.EqualTo("item"));
     }
 
     [Test]
@@ -92,7 +92,7 @@ public class SampleFunctionsScenarioTests
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
         var result = await AppUnderTest.Host.For<SampleFunctions>().SampleWithMiddlewareItem(s => s.Execute([eventData]));
-        Assert.That(result, Is.EqualTo("stamped"));
+        Assert.That(result.Value, Is.EqualTo("stamped"));
     }
 
     [Test]
@@ -103,7 +103,7 @@ public class SampleFunctionsScenarioTests
         var result = await AppUnderTest.Host.For<SampleFunctions>().SampleWithBindingData(s =>
             s.Execute([eventData]).WithBindingData("test", "bound"));
 
-        Assert.That(result, Is.EqualTo("bound"));
+        Assert.That(result.Value, Is.EqualTo("bound"));
     }
 
     [Test]
@@ -114,7 +114,7 @@ public class SampleFunctionsScenarioTests
         var result = await AppUnderTest.Host.For<SampleFunctions>().SampleWithRetryContext(s =>
             s.Execute([eventData]).WithRetryContext(2, 5));
 
-        Assert.That(result, Is.EqualTo("2/5"));
+        Assert.That(result.Value, Is.EqualTo("2/5"));
     }
 
     [Test]
@@ -124,7 +124,7 @@ public class SampleFunctionsScenarioTests
 
         var result = await AppUnderTest.Host.For<SampleFunctions>().SampleWithCancellationToken(s => s.Execute([eventData]));
 
-        Assert.That(result, Is.EqualTo("not-cancelled"));
+        Assert.That(result.Value, Is.EqualTo("not-cancelled"));
     }
 
     [Test]
@@ -135,18 +135,19 @@ public class SampleFunctionsScenarioTests
         var result = await AppUnderTest.Host.For<SampleFunctions>().SampleWithCancellationToken(s =>
             s.Execute([eventData]).WithCancellationToken(new CancellationToken(canceled: true)));
 
-        Assert.That(result, Is.EqualTo("cancelled"));
+        Assert.That(result.Value, Is.EqualTo("cancelled"));
     }
 
     [Test]
-    public void ShortCircuitingMiddlewareReportsFunctionNotInvoked()
+    public async Task ShortCircuitingMiddlewareReportsFunctionNotInvoked()
     {
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
-        Assert.That(
-            () => AppUnderTest.Host.For<SampleFunctions>().SampleTaskOfValue(s =>
-                s.Execute([eventData]).WithContext(ctx => ctx.Items["shortCircuit"] = true)),
-            Throws.InvalidOperationException);
+        var result = await AppUnderTest.Host.For<SampleFunctions>().SampleTaskOfValue(s =>
+            s.Execute([eventData]).WithContext(ctx => ctx.Items["shortCircuit"] = true));
+
+        Assert.That(result.Invoked, Is.False);
+        Assert.That(result.Succeeded, Is.False);
     }
 
     [Test]
@@ -199,7 +200,7 @@ public class SampleFunctionsScenarioTests
         var result = await AppUnderTest.Host.For<SampleFunctions>().SampleReturnBinding(s =>
             s.Execute([eventData]).WithContext(ctx => capturedContext = ctx));
 
-        Assert.That(result, Is.EqualTo("x"));
+        Assert.That(result.Value, Is.EqualTo("x"));
         Assert.That(capturedContext!.FunctionDefinition.OutputBindings.ContainsKey("$return"), Is.True);
         Assert.That(((DummyFunctionContext)capturedContext).OutputBindingData, Is.Empty);
     }
@@ -249,6 +250,18 @@ public class SampleFunctionsScenarioTests
 
         Assert.That(emptyEntries, Has.All.Matches<CapturedLogEntry>(e => e.Level == LogLevel.Warning));
         Assert.That(dataEntries, Has.All.Matches<CapturedLogEntry>(e => e.Level == LogLevel.Information));
+    }
+
+    [Test]
+    public async Task FunctionThrowingExceptionIsCapturedOnResult()
+    {
+        var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
+
+        var result = await AppUnderTest.Host.For<SampleFunctions>().SampleThatThrows(s => s.Execute([eventData]));
+
+        Assert.That(result.Faulted, Is.True);
+        Assert.That(result.Invoked, Is.True);
+        Assert.That(result.Exception, Is.InstanceOf<InvalidOperationException>().And.Message.EqualTo("Boom"));
     }
 }
 

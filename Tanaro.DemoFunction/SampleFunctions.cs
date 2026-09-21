@@ -73,6 +73,10 @@ public class SampleFunctions(ILogger<SampleFunctions> logger)
         logger.LogInformation("Received {Count} events", eventData.Length);
         return "logged";
     }
+
+    [Function("SampleThatThrows")]
+    public string ThatThrows([EventHubTrigger("hub")] EventData[] eventData) =>
+        throw new InvalidOperationException("Boom");
 }
 
 public class MultiOutputResult
