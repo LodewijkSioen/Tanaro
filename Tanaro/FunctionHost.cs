@@ -4,6 +4,7 @@ using Microsoft.Azure.Functions.Worker.Invocation;
 using Microsoft.Azure.Functions.Worker.Middleware;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using OpenTelemetry.Trace;
 
 namespace Tanaro;
@@ -55,7 +56,10 @@ public class FunctionHost
             executed = true;
         }));
 
-        await RunPipeline(scope.ServiceProvider, scenario.FunctionContext);
+        using (BeginInvocationScope(scope.ServiceProvider, scenario.FunctionContext.InvocationId))
+        {
+            await RunPipeline(scope.ServiceProvider, scenario.FunctionContext);
+        }
 
         if (!executed)
         {
@@ -92,7 +96,10 @@ public class FunctionHost
             executed = true;
         }));
 
-        await RunPipeline(scope.ServiceProvider, scenario.FunctionContext);
+        using (BeginInvocationScope(scope.ServiceProvider, scenario.FunctionContext.InvocationId))
+        {
+            await RunPipeline(scope.ServiceProvider, scenario.FunctionContext);
+        }
 
         if (!executed)
         {
@@ -120,6 +127,13 @@ public class FunctionHost
         _ = services.GetService<TracerProvider>();
         return Metrics.Source.StartActivity();
     }
+
+    // Lets a consumer-registered ILoggerProvider (supplying its own log capture) correlate entries to this invocation.
+    private static IDisposable? BeginInvocationScope(IServiceProvider services, string invocationId) =>
+        services.GetRequiredService<ILoggerFactory>().CreateLogger("Tanaro").BeginScope(new Dictionary<string, object?>
+        {
+            [LoggingCorrelation.InvocationIdKey] = invocationId,
+        });
 
     private static DummyFunctionContext BuildFunctionContext(Activity? rootActivity, IServiceProvider instanceServices, FunctionDefinition definition) =>
         new(new DummyTraceContext(rootActivity), instanceServices, definition);

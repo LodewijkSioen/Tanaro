@@ -1,10 +1,11 @@
 using Azure.Messaging.EventHubs;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Logging;
 
 namespace Tanaro.DemoFunction;
 
 // Exercises the Task<T>, Task, void and FunctionContext-parameter scenario shapes.
-public class SampleFunctions
+public class SampleFunctions(ILogger<SampleFunctions> logger)
 {
     [Function("SampleTaskOfValue")]
     public Task<int> CountAsync([EventHubTrigger("hub")] EventData[] eventData) => Task.FromResult(eventData.Length);
@@ -59,6 +60,19 @@ public class SampleFunctions
         Message = null,
         Note = "note"
     };
+
+    [Function("SampleWithLogging")]
+    public string WithLogging([EventHubTrigger("hub")] EventData[] eventData)
+    {
+        if (eventData.Length == 0)
+        {
+            logger.LogWarning("No data received");
+            return "no-data";
+        }
+
+        logger.LogInformation("Received {Count} events", eventData.Length);
+        return "logged";
+    }
 }
 
 public class MultiOutputResult

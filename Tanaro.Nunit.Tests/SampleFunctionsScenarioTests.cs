@@ -1,5 +1,6 @@
 ﻿using Azure.Messaging.EventHubs;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Logging;
 using Tanaro.DemoFunction;
 using Tanaro.Generated;
 
@@ -201,6 +202,53 @@ public class SampleFunctionsScenarioTests
         Assert.That(result, Is.EqualTo("x"));
         Assert.That(capturedContext!.FunctionDefinition.OutputBindings.ContainsKey("$return"), Is.True);
         Assert.That(((DummyFunctionContext)capturedContext).OutputBindingData, Is.Empty);
+    }
+
+    [Test]
+    public async Task WarningIsLoggedWhenNoDataReceived()
+    {
+        FunctionContext? capturedContext = null;
+
+        await AppUnderTest.Host.For<SampleFunctions>().SampleWithLogging(s =>
+            s.Execute([]).WithContext(ctx => capturedContext = ctx));
+
+        var entries = AppUnderTest.Logs.EntriesFor(capturedContext!.InvocationId);
+        Assert.That(entries, Has.One.Matches<CapturedLogEntry>(e =>
+            e.Level == LogLevel.Warning && e.Message == "No data received"));
+    }
+
+    [Test]
+    public async Task InfoIsLoggedWhenDataReceived()
+    {
+        var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
+        FunctionContext? capturedContext = null;
+
+        await AppUnderTest.Host.For<SampleFunctions>().SampleWithLogging(s =>
+            s.Execute([eventData]).WithContext(ctx => capturedContext = ctx));
+
+        var entries = AppUnderTest.Logs.EntriesFor(capturedContext!.InvocationId);
+        Assert.That(entries, Has.One.Matches<CapturedLogEntry>(e =>
+            e.Level == LogLevel.Information && e.Message == "Received 1 events"));
+        Assert.That(entries, Has.None.Matches<CapturedLogEntry>(e => e.Level == LogLevel.Warning));
+    }
+
+    [Test]
+    public async Task LogsFromOneInvocationAreNotVisibleOnAnother()
+    {
+        var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
+        FunctionContext? emptyInvocation = null;
+        FunctionContext? dataInvocation = null;
+
+        await AppUnderTest.Host.For<SampleFunctions>().SampleWithLogging(s =>
+            s.Execute([]).WithContext(ctx => emptyInvocation = ctx));
+        await AppUnderTest.Host.For<SampleFunctions>().SampleWithLogging(s =>
+            s.Execute([eventData]).WithContext(ctx => dataInvocation = ctx));
+
+        var emptyEntries = AppUnderTest.Logs.EntriesFor(emptyInvocation!.InvocationId);
+        var dataEntries = AppUnderTest.Logs.EntriesFor(dataInvocation!.InvocationId);
+
+        Assert.That(emptyEntries, Has.All.Matches<CapturedLogEntry>(e => e.Level == LogLevel.Warning));
+        Assert.That(dataEntries, Has.All.Matches<CapturedLogEntry>(e => e.Level == LogLevel.Information));
     }
 }
 
