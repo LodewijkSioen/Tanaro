@@ -1,3 +1,4 @@
+using Google.Protobuf.WellKnownTypes;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Tanaro;
@@ -59,4 +60,10 @@ public sealed class ScenarioResult
 
     [MemberNotNullWhen(true, nameof(Exception))]
     public bool Faulted => Exception is not null;
+
+    public void EnsureSuccess()
+    {
+        if (Faulted) throw Exception;
+        if (!Invoked) throw new FunctionNotInvokedException();
+    }
 }
