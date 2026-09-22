@@ -2,6 +2,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Tanaro;
 
+public class FunctionNotInvokedException : Exception;
+
 /// <summary>
 /// Wraps the outcome of invoking a value-returning <c>[Function]</c> method through <see cref="FunctionHost"/>,
 /// so callers can assert on success/failure without a thrown exception escaping the scenario call.
@@ -27,6 +29,13 @@ public sealed class ScenarioResult<TResult>
 
     [MemberNotNullWhen(true, nameof(Exception))]
     public bool Faulted => Exception is not null;
+
+    [MemberNotNull(nameof(Value))]
+    public void EnsureSuccess()
+    {
+        if (Faulted) throw Exception;
+        if (!Succeeded) throw new FunctionNotInvokedException();
+    }
 }
 
 /// <summary>

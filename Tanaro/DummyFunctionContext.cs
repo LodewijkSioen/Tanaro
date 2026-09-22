@@ -10,8 +10,12 @@ public class DummyFunctionContext(TraceContext traceContext, IServiceProvider in
     public override string InvocationId { get; } = Guid.NewGuid().ToString();
     public override string FunctionId { get; } = functionDefinition.Id;
     public override TraceContext TraceContext { get; } = traceContext;
-    public override BindingContext BindingContext { get; } = new DummyBindingContext();
-    public override RetryContext RetryContext { get; } = new DummyRetryContext();
+
+    private readonly DummyBindingContext _bindingContext = new();
+    private readonly DummyRetryContext _retryContext = new();
+
+    public override BindingContext BindingContext => _bindingContext;
+    public override RetryContext RetryContext => _retryContext;
     public override IServiceProvider InstanceServices { get; set; } = instanceServices;
     public override FunctionDefinition FunctionDefinition { get; } = functionDefinition;
     public override IDictionary<object, object> Items { get; set; } = new Dictionary<object, object>();
@@ -27,6 +31,10 @@ public class DummyFunctionContext(TraceContext traceContext, IServiceProvider in
     internal void SetOutputBinding(string name, object? value) => _outputBindingData[name] = value;
 
     internal void SetCancellationToken(CancellationToken token) => _cancellationToken = token;
+
+    internal void SetBindingData(string key, object? value) => _bindingContext.Set(key, value);
+
+    internal void SetRetryContext(int retryCount, int maxRetryCount) => _retryContext.Set(retryCount, maxRetryCount);
 }
 
 public class DummyTraceContext(Activity? activity) : TraceContext

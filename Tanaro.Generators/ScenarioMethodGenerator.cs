@@ -286,7 +286,7 @@ public class ScenarioMethodGenerator : IIncrementalGenerator
 
         namespace Tanaro.Generated;
 
-        public sealed class {{scenarioTypeName}}(global::Microsoft.Azure.Functions.Worker.FunctionContext functionContext) : {{scenarioBase}}(functionContext)
+        public sealed class {{scenarioTypeName}}(global::Tanaro.DummyFunctionContext functionContext) : {{scenarioBase}}(functionContext)
         {
             public {{scenarioTypeName}} Execute({{method.ParameterList}})
             {
@@ -298,7 +298,7 @@ public class ScenarioMethodGenerator : IIncrementalGenerator
         public static class {{method.FunctionName}}Extensions
         {
             public static {{hostReturnType}} {{method.FunctionName}}(this global::Tanaro.FunctionScenarios<{{method.DeclaringTypeFullyQualifiedName}}> s, global::System.Action<{{scenarioTypeName}}> configure)
-                => s.Host.RunScenario<{{runScenarioTypeArguments}}>(configure, ctx => new {{scenarioTypeName}}(ctx), {{functionDefinition}});
+                => s.Host.Runner.RunScenario<{{runScenarioTypeArguments}}>(configure, ctx => new {{scenarioTypeName}}(ctx), {{functionDefinition}});
         }
         """;
     }

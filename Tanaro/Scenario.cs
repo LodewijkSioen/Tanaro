@@ -7,12 +7,15 @@ namespace Tanaro;
 /// exposes an <c>Execute(...)</c> method (matching the real method's parameters) that calls <see cref="Record"/>;
 /// <see cref="FunctionHost"/> resolves <typeparamref name="TFunction"/> and awaits the recorded invocation.
 /// </summary>
-public class Scenario<TFunction>(FunctionContext functionContext)
+public class Scenario<TFunction>(DummyFunctionContext functionContext)
     where TFunction : class
 {
-    public FunctionContext FunctionContext { get; } = functionContext;
+    // Exposed to ScenarioRunner so it can read output bindings without casting FunctionContext back down.
+    internal DummyFunctionContext DummyFunctionContext { get; } = functionContext;
 
-    internal Func<TFunction, FunctionContext, Task>? Invocation { get; private set; }
+    public FunctionContext FunctionContext => DummyFunctionContext;
+
+    internal Func<TFunction, FunctionContext, Task>? Invocation { get; private protected set; }
 
     protected void Record(Func<TFunction, FunctionContext, Task> invocation)
     {
@@ -32,19 +35,19 @@ public class Scenario<TFunction>(FunctionContext functionContext)
 
     public Scenario<TFunction> WithBindingData(string key, object? value)
     {
-        ((DummyBindingContext)FunctionContext.BindingContext).Set(key, value);
+        DummyFunctionContext.SetBindingData(key, value);
         return this;
     }
 
     public Scenario<TFunction> WithRetryContext(int retryCount, int maxRetryCount)
     {
-        ((DummyRetryContext)FunctionContext.RetryContext).Set(retryCount, maxRetryCount);
+        DummyFunctionContext.SetRetryContext(retryCount, maxRetryCount);
         return this;
     }
 
     public Scenario<TFunction> WithCancellationToken(CancellationToken token)
     {
-        ((DummyFunctionContext)FunctionContext).SetCancellationToken(token);
+        DummyFunctionContext.SetCancellationToken(token);
         return this;
     }
 }
@@ -54,12 +57,11 @@ public class Scenario<TFunction>(FunctionContext functionContext)
 /// exposes an <c>Execute(...)</c> method (matching the real method's parameters) that calls <see cref="Record"/>;
 /// <see cref="FunctionHost"/> resolves <typeparamref name="TFunction"/> and awaits the recorded invocation.
 /// </summary>
-public class Scenario<TFunction, TResult>(FunctionContext functionContext)
+public class Scenario<TFunction, TResult>(DummyFunctionContext functionContext) : Scenario<TFunction>(functionContext)
     where TFunction : class
 {
-    public FunctionContext FunctionContext { get; } = functionContext;
-
-    internal Func<TFunction, FunctionContext, Task<TResult>>? Invocation { get; private set; }
+    // Set from within the wrapped Invocation delegate once the real invocation completes.
+    internal TResult? Result { get; private set; }
 
     protected void Record(Func<TFunction, FunctionContext, Task<TResult>> invocation)
     {
@@ -68,30 +70,31 @@ public class Scenario<TFunction, TResult>(FunctionContext functionContext)
             throw new InvalidOperationException("Execute was already called on this scenario.");
         }
 
-        Invocation = invocation;
+        Invocation = async (f, ctx) => Result = await invocation(f, ctx);
     }
 
-    public Scenario<TFunction, TResult> WithBindingData(string key, object? value)
+    // Hides the base members to keep the fluent chain typed as Scenario<TFunction, TResult>.
+    public new Scenario<TFunction, TResult> WithBindingData(string key, object? value)
     {
-        ((DummyBindingContext)FunctionContext.BindingContext).Set(key, value);
+        base.WithBindingData(key, value);
         return this;
     }
 
-    public Scenario<TFunction, TResult> WithRetryContext(int retryCount, int maxRetryCount)
+    public new Scenario<TFunction, TResult> WithRetryContext(int retryCount, int maxRetryCount)
     {
-        ((DummyRetryContext)FunctionContext.RetryContext).Set(retryCount, maxRetryCount);
+        base.WithRetryContext(retryCount, maxRetryCount);
         return this;
     }
 
-    public Scenario<TFunction, TResult> WithCancellationToken(CancellationToken token)
+    public new Scenario<TFunction, TResult> WithCancellationToken(CancellationToken token)
     {
-        ((DummyFunctionContext)FunctionContext).SetCancellationToken(token);
+        base.WithCancellationToken(token);
         return this;
     }
 
-    public Scenario<TFunction, TResult> WithContext(Action<FunctionContext> configure)
+    public new Scenario<TFunction, TResult> WithContext(Action<FunctionContext> configure)
     {
-        configure(FunctionContext);
+        base.WithContext(configure);
         return this;
     }
 }

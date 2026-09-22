@@ -39,6 +39,7 @@ public class SampleFunctionsScenarioTests
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
         var result = await AppUnderTest.Host.Run<SampleFunctions>().SampleWithContext(s => s.Execute([eventData]));
+        result.EnsureSuccess();
         Assert.That(result.Value, Does.StartWith("1:"));
     }
 

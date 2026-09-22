@@ -49,6 +49,7 @@ public async Task CountsEvents()
     var result = await AppUnderTest.Host.For<SampleFunctions>()
         .SampleTaskOfValue(s => s.Execute([eventData]));
 
+    result.EnsureSuccess();
     Assert.That(result.Value, Is.EqualTo(1));
 }
 ```
