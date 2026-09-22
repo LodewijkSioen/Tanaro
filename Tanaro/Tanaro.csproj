@@ -8,11 +8,29 @@
     <PackageId>Tanaro</PackageId>
     <Description>A testing harness for Azure Functions inspired by Alba.</Description>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_PackTanaroGenerator</TargetsForTfmSpecificContentInPackage>
+
+    <Authors>Lodewijk Sioen</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/LodewijkSioen/Tanaro</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/LodewijkSioen/Tanaro</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>azure-functions;testing;test-harness;integration-testing</PackageTags>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.52.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.OpenTelemetry" Version="1.2.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.401">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="MinVer" Version="8.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -23,6 +41,10 @@
   <ItemGroup>
     <!-- Build-order dependency only: its output is packed as an analyzer below, not referenced by this assembly. -->
     <ProjectReference Include="..\Tanaro.Generators\Tanaro.Generators.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\readme.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <!-- Bundles Tanaro.Generators.dll into this package so consumers get scenario-method generation for free. -->
