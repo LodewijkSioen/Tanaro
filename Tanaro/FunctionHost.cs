@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel;
+using System.Diagnostics;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Invocation;
 using Microsoft.Azure.Functions.Worker.Middleware;
@@ -31,6 +32,7 @@ public class FunctionHost
     public FunctionScenarios<TFunction> For<TFunction>() where TFunction : class => new(this);
 
     // Public (not internal) because generated hook methods live in the consumer's assembly.
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public async Task<ScenarioResult<TResult>> RunScenario<TFunction, TResult, TScenario>(Action<TScenario> configure, Func<FunctionContext, TScenario> createScenario, FunctionDefinition definition)
         where TFunction : class
         where TScenario : Scenario<TFunction, TResult>
@@ -79,6 +81,7 @@ public class FunctionHost
     }
 
     // Public (not internal) because generated hook methods live in the consumer's assembly.
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public async Task<ScenarioResult> RunScenario<TFunction, TScenario>(Action<TScenario> configure, Func<FunctionContext, TScenario> createScenario, FunctionDefinition definition)
         where TFunction : class
         where TScenario : Scenario<TFunction>
