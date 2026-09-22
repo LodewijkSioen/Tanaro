@@ -113,6 +113,4 @@ internal static class HostFactoryResolver
         {
         }
     }
-
-    private sealed class HostAbortedException : Exception;
 }

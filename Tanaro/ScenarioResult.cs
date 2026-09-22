@@ -1,4 +1,3 @@
-using Google.Protobuf.WellKnownTypes;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Tanaro;
