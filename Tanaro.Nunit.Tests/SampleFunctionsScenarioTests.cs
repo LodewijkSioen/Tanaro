@@ -13,7 +13,7 @@ public class SampleFunctionsScenarioTests
     {
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
-        var result = await AppUnderTest.Host.For<SampleFunctions>().SampleTaskOfValue(s => s.Execute([eventData]));
+        var result = await AppUnderTest.Host.Run<SampleFunctions>().SampleTaskOfValue(s => s.Execute([eventData]));
         Assert.That(result.Value, Is.EqualTo(1));
     }
 
@@ -22,7 +22,7 @@ public class SampleFunctionsScenarioTests
     {
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
-        await AppUnderTest.Host.For<SampleFunctions>().SampleTask(s => s.Execute([eventData]));
+        await AppUnderTest.Host.Run<SampleFunctions>().SampleTask(s => s.Execute([eventData]));
     }
 
     [Test]
@@ -30,7 +30,7 @@ public class SampleFunctionsScenarioTests
     {
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
-        await AppUnderTest.Host.For<SampleFunctions>().SampleVoid(s => s.Execute([eventData]));
+        await AppUnderTest.Host.Run<SampleFunctions>().SampleVoid(s => s.Execute([eventData]));
     }
 
     [Test]
@@ -38,7 +38,7 @@ public class SampleFunctionsScenarioTests
     {
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
-        var result = await AppUnderTest.Host.For<SampleFunctions>().SampleWithContext(s => s.Execute([eventData]));
+        var result = await AppUnderTest.Host.Run<SampleFunctions>().SampleWithContext(s => s.Execute([eventData]));
         Assert.That(result.Value, Does.StartWith("1:"));
     }
 
@@ -48,7 +48,7 @@ public class SampleFunctionsScenarioTests
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
         FunctionContext? capturedContext = null;
 
-        await AppUnderTest.Host.For<SampleFunctions>().SampleWithContext(s =>
+        await AppUnderTest.Host.Run<SampleFunctions>().SampleWithContext(s =>
             s.Execute([eventData]).WithContext(ctx => capturedContext = ctx));
 
         Assert.That(capturedContext!.FunctionDefinition.Name, Is.EqualTo("SampleWithContext"));
@@ -62,7 +62,7 @@ public class SampleFunctionsScenarioTests
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
         FunctionContext? capturedContext = null;
 
-        await AppUnderTest.Host.For<SampleFunctions>().SampleWithContext(s =>
+        await AppUnderTest.Host.Run<SampleFunctions>().SampleWithContext(s =>
             s.Execute([eventData]).WithContext(ctx => capturedContext = ctx));
 
         var binding = capturedContext!.FunctionDefinition.InputBindings["eventData"];
@@ -77,7 +77,7 @@ public class SampleFunctionsScenarioTests
 
         // WithContext is called after Execute in source, but the recorded invocation only runs once this
         // configure lambda returns, so the mutation is still visible to the function.
-        var result = await AppUnderTest.Host.For<SampleFunctions>().SampleWithContextItem(s =>
+        var result = await AppUnderTest.Host.Run<SampleFunctions>().SampleWithContextItem(s =>
         {
             s.Execute([eventData])
                 .WithContext(ctx => ctx.Items.Add("test", "item"));
@@ -91,7 +91,7 @@ public class SampleFunctionsScenarioTests
     {
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
-        var result = await AppUnderTest.Host.For<SampleFunctions>().SampleWithMiddlewareItem(s => s.Execute([eventData]));
+        var result = await AppUnderTest.Host.Run<SampleFunctions>().SampleWithMiddlewareItem(s => s.Execute([eventData]));
         Assert.That(result.Value, Is.EqualTo("stamped"));
     }
 
@@ -100,7 +100,7 @@ public class SampleFunctionsScenarioTests
     {
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
-        var result = await AppUnderTest.Host.For<SampleFunctions>().SampleWithBindingData(s =>
+        var result = await AppUnderTest.Host.Run<SampleFunctions>().SampleWithBindingData(s =>
             s.Execute([eventData]).WithBindingData("test", "bound"));
 
         Assert.That(result.Value, Is.EqualTo("bound"));
@@ -111,7 +111,7 @@ public class SampleFunctionsScenarioTests
     {
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
-        var result = await AppUnderTest.Host.For<SampleFunctions>().SampleWithRetryContext(s =>
+        var result = await AppUnderTest.Host.Run<SampleFunctions>().SampleWithRetryContext(s =>
             s.Execute([eventData]).WithRetryContext(2, 5));
 
         Assert.That(result.Value, Is.EqualTo("2/5"));
@@ -122,7 +122,7 @@ public class SampleFunctionsScenarioTests
     {
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
-        var result = await AppUnderTest.Host.For<SampleFunctions>().SampleWithCancellationToken(s => s.Execute([eventData]));
+        var result = await AppUnderTest.Host.Run<SampleFunctions>().SampleWithCancellationToken(s => s.Execute([eventData]));
 
         Assert.That(result.Value, Is.EqualTo("not-cancelled"));
     }
@@ -132,7 +132,7 @@ public class SampleFunctionsScenarioTests
     {
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
-        var result = await AppUnderTest.Host.For<SampleFunctions>().SampleWithCancellationToken(s =>
+        var result = await AppUnderTest.Host.Run<SampleFunctions>().SampleWithCancellationToken(s =>
             s.Execute([eventData]).WithCancellationToken(new CancellationToken(canceled: true)));
 
         Assert.That(result.Value, Is.EqualTo("cancelled"));
@@ -143,7 +143,7 @@ public class SampleFunctionsScenarioTests
     {
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
-        var result = await AppUnderTest.Host.For<SampleFunctions>().SampleTaskOfValue(s =>
+        var result = await AppUnderTest.Host.Run<SampleFunctions>().SampleTaskOfValue(s =>
             s.Execute([eventData]).WithContext(ctx => ctx.Items["shortCircuit"] = true));
 
         Assert.That(result.Invoked, Is.False);
@@ -156,7 +156,7 @@ public class SampleFunctionsScenarioTests
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
         FunctionContext? capturedContext = null;
 
-        await AppUnderTest.Host.For<SampleFunctions>().SampleWithMultiOutput(s =>
+        await AppUnderTest.Host.Run<SampleFunctions>().SampleWithMultiOutput(s =>
             s.Execute([eventData]).WithContext(ctx => capturedContext = ctx));
 
         var binding = capturedContext!.FunctionDefinition.OutputBindings["Message"];
@@ -171,7 +171,7 @@ public class SampleFunctionsScenarioTests
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
         FunctionContext? capturedContext = null;
 
-        await AppUnderTest.Host.For<SampleFunctions>().SampleWithMultiOutput(s =>
+        await AppUnderTest.Host.Run<SampleFunctions>().SampleWithMultiOutput(s =>
             s.Execute([eventData]).WithContext(ctx => capturedContext = ctx));
 
         var outputBindingData = ((DummyFunctionContext)capturedContext!).OutputBindingData;
@@ -185,7 +185,7 @@ public class SampleFunctionsScenarioTests
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
         FunctionContext? capturedContext = null;
 
-        await AppUnderTest.Host.For<SampleFunctions>().SampleWithNullOutput(s =>
+        await AppUnderTest.Host.Run<SampleFunctions>().SampleWithNullOutput(s =>
             s.Execute([eventData]).WithContext(ctx => capturedContext = ctx));
 
         Assert.That(((DummyFunctionContext)capturedContext!).OutputBindingData.ContainsKey("Message"), Is.False);
@@ -197,7 +197,7 @@ public class SampleFunctionsScenarioTests
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
         FunctionContext? capturedContext = null;
 
-        var result = await AppUnderTest.Host.For<SampleFunctions>().SampleReturnBinding(s =>
+        var result = await AppUnderTest.Host.Run<SampleFunctions>().SampleReturnBinding(s =>
             s.Execute([eventData]).WithContext(ctx => capturedContext = ctx));
 
         Assert.That(result.Value, Is.EqualTo("x"));
@@ -210,7 +210,7 @@ public class SampleFunctionsScenarioTests
     {
         FunctionContext? capturedContext = null;
 
-        await AppUnderTest.Host.For<SampleFunctions>().SampleWithLogging(s =>
+        await AppUnderTest.Host.Run<SampleFunctions>().SampleWithLogging(s =>
             s.Execute([]).WithContext(ctx => capturedContext = ctx));
 
         var entries = AppUnderTest.Logs.EntriesFor(capturedContext!.InvocationId);
@@ -224,7 +224,7 @@ public class SampleFunctionsScenarioTests
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
         FunctionContext? capturedContext = null;
 
-        await AppUnderTest.Host.For<SampleFunctions>().SampleWithLogging(s =>
+        await AppUnderTest.Host.Run<SampleFunctions>().SampleWithLogging(s =>
             s.Execute([eventData]).WithContext(ctx => capturedContext = ctx));
 
         var entries = AppUnderTest.Logs.EntriesFor(capturedContext!.InvocationId);
@@ -240,9 +240,9 @@ public class SampleFunctionsScenarioTests
         FunctionContext? emptyInvocation = null;
         FunctionContext? dataInvocation = null;
 
-        await AppUnderTest.Host.For<SampleFunctions>().SampleWithLogging(s =>
+        await AppUnderTest.Host.Run<SampleFunctions>().SampleWithLogging(s =>
             s.Execute([]).WithContext(ctx => emptyInvocation = ctx));
-        await AppUnderTest.Host.For<SampleFunctions>().SampleWithLogging(s =>
+        await AppUnderTest.Host.Run<SampleFunctions>().SampleWithLogging(s =>
             s.Execute([eventData]).WithContext(ctx => dataInvocation = ctx));
 
         var emptyEntries = AppUnderTest.Logs.EntriesFor(emptyInvocation!.InvocationId);
@@ -257,7 +257,7 @@ public class SampleFunctionsScenarioTests
     {
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
-        var result = await AppUnderTest.Host.For<SampleFunctions>().SampleThatThrows(s => s.Execute([eventData]));
+        var result = await AppUnderTest.Host.Run<SampleFunctions>().SampleThatThrows(s => s.Execute([eventData]));
 
         Assert.That(result.Faulted, Is.True);
         Assert.That(result.Invoked, Is.True);

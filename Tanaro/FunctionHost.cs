@@ -29,7 +29,7 @@ public class FunctionHost
         return new(new FunctionApplicationFactory<T>(configuration, settings));
     }
 
-    public FunctionScenarios<TFunction> For<TFunction>() where TFunction : class => new(this);
+    public FunctionScenarios<TFunction> Run<TFunction>() where TFunction : class => new(this);
 
     // Public (not internal) because generated hook methods live in the consumer's assembly.
     [EditorBrowsable(EditorBrowsableState.Never)]

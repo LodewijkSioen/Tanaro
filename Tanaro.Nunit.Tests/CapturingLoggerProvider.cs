@@ -5,7 +5,7 @@ namespace Tanaro.Nunit.Tests;
 
 /// <summary>
 /// Demonstrates that log capture is entirely consumer-owned: this provider lives in the test project (not
-/// Tanaro) and is registered via <c>FunctionHost.For</c>'s <c>configuration</c> callback. It reads
+/// Tanaro) and is registered via <c>FunctionHost.Run</c>'s <c>configuration</c> callback. It reads
 /// <see cref="LoggingCorrelation.InvocationIdKey"/> out of the scope Tanaro pushes around each invocation so
 /// entries can be filtered back to a specific scenario call even though this provider is a singleton shared
 /// across every test that uses <see cref="AppUnderTest.Host"/>.
