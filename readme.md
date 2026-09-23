@@ -17,8 +17,21 @@ analyzer reference required.
 
 ## Quick start
 
+`Program` from top-level statements is `internal`, so your Function App needs to expose it to the test
+project via `InternalsVisibleTo`:
+
+```xml
+<ItemGroup>
+  <InternalsVisibleTo Include="YourTestProject" />
+</ItemGroup>
+```
+
 Flag your test fixture with `[FunctionUnderTest<T>]` for every function class you want to exercise, and start
-the host from your Function App's `Program`:
+the host from your Function App's `Program`.
+
+### NUnit
+
+Building the FunctionHost is expensive so you only want to do it once per test fixture. The following pattern allows you to reuse your host across tests.
 
 ```csharp
 [SetUpFixture]
@@ -33,15 +46,6 @@ public class AppUnderTest
     [OneTimeTearDown]
     public void TearDown() => Host.Dispose();
 }
-```
-
-`Program` from top-level statements is `internal`, so your Function App needs to expose it to the test
-project via `InternalsVisibleTo`:
-
-```xml
-<ItemGroup>
-  <InternalsVisibleTo Include="YourTestProject" />
-</ItemGroup>
 ```
 
 The generator emits one scenario method per `[Function("Name")]` method on `SampleFunctions`, named after the
@@ -65,6 +69,44 @@ public async Task CountsEvents()
 
 `Execute(...)` records the call; `WithContext(ctx => ...)` lets you inspect or mutate the `FunctionContext`
 (bindings, items, retry context, ...) before the function actually runs.
+
+### xUnit
+
+xUnit doesn't have `[SetUpFixture]`/`[OneTimeSetUp]`, so start the host in an `IAsyncDisposable` fixture and
+share it across tests with an `[assembly: AssemblyFixture(...)]`:
+
+```csharp
+[assembly: AssemblyFixture(typeof(Tanaro.XUnit.Tests.AppFixture))]
+
+namespace Tanaro.XUnit.Tests;
+
+[FunctionUnderTest<SampleFunctions>]
+public class AppFixture : IAsyncDisposable
+{
+    public FunctionHost Host { get; } = FunctionHost.For<Program>(_ => { }, []);
+
+    public ValueTask DisposeAsync() => Host.DisposeAsync();
+}
+```
+
+Inject the fixture into your test class and call the generated scenario methods the same way:
+
+```csharp
+using Tanaro.Generated;
+
+public class SampleFunctionsScenarioTests(AppFixture fixture)
+{
+    [Fact]
+    public async Task TaskOfValueShape()
+    {
+        var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
+
+        var result = await fixture.Host.Run<SampleFunctions>().SampleTaskOfValue(s => s.Execute([eventData]));
+
+        Assert.Equal(1, result.Value);
+    }
+}
+```
 
 ## AI Stance
 Tanaro isn't vibe-coded. We use a mix of regular coding and agent-assisted work, but people make the design decisions. Every change is reviewed, understood, and validated by a person before it lands.
