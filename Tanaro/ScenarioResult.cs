@@ -82,7 +82,10 @@ public sealed class ScenarioResult
 
     public void EnsureSuccess()
     {
-        if (Faulted) throw Exception;
+        if (Faulted)
+        {
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(Exception).Throw();
+        }
         if (!Invoked) throw new FunctionNotInvokedException();
     }
 }
