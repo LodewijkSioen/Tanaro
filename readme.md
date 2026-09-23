@@ -35,6 +35,15 @@ public class AppUnderTest
 }
 ```
 
+`Program` from top-level statements is `internal`, so your Function App needs to expose it to the test
+project via `InternalsVisibleTo`:
+
+```xml
+<ItemGroup>
+  <InternalsVisibleTo Include="YourTestProject" />
+</ItemGroup>
+```
+
 The generator emits one scenario method per `[Function("Name")]` method on `SampleFunctions`, named after the
 function. Call it to invoke the function through DI and assert on its return value:
 
@@ -46,7 +55,7 @@ public async Task CountsEvents()
 {
     var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
-    var result = await AppUnderTest.Host.For<SampleFunctions>()
+    var result = await AppUnderTest.Host.Run<SampleFunctions>()
         .SampleTaskOfValue(s => s.Execute([eventData]));
 
     result.EnsureSuccess();
@@ -57,9 +66,6 @@ public async Task CountsEvents()
 `Execute(...)` records the call; `WithContext(ctx => ...)` lets you inspect or mutate the `FunctionContext`
 (bindings, items, retry context, ...) before the function actually runs.
 
-## Name
-[Tanaro](https://en.wikipedia.org/wiki/Tanaro) is the river running trough the city of Alba, Italy.
-
 ## AI Stance
 Tanaro isn't vibe-coded. We use a mix of regular coding and agent-assisted work, but people make the design decisions. Every change is reviewed, understood, and validated by a person before it lands.
 
@@ -68,3 +74,9 @@ We don't mind contributors using agents either, as long as their contributions f
 Please don't submit AI slop. Generic, unreviewed, or needlessly verbose generated issues, pull request descriptions, or review comments will be immediately closed when they create more work than value.
 
 (Generously stolen from [Oskar Dudycz](https://lnkd.in/p/eqt5Yxct))
+
+## Name
+[Tanaro](https://en.wikipedia.org/wiki/Tanaro) is the river running trough the city of Alba, Italy. 
+Since this project is inspired by the [Alba](https://github.com/JasperFx/alba) testing framework, that seemed like a good name.
+
+And yes, I know that library is named after Alba, Missouri. 

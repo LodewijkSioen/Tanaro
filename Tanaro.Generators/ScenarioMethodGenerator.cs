@@ -135,7 +135,7 @@ public class ScenarioMethodGenerator : IIncrementalGenerator
                 returnTypeArgument,
                 string.Join(", ", signatureParts),
                 string.Join(", ", argumentParts),
-                $"global::System.Collections.Immutable.ImmutableArray.Create({string.Join(", ", parameterInitializers)})",
+                BuildParametersInitializer(parameterInitializers),
                 BuildBindingsInitializer(inputBindingInitializers),
                 BuildBindingsInitializer(outputBindingInitializers)));
         }
@@ -192,6 +192,11 @@ public class ScenarioMethodGenerator : IIncrementalGenerator
 
         return name.Length == 0 ? name : char.ToLowerInvariant(name[0]) + name.Substring(1);
     }
+
+    private static string BuildParametersInitializer(List<string> parameterInitializers) =>
+        parameterInitializers.Count == 0
+            ? "global::System.Collections.Immutable.ImmutableArray<global::Microsoft.Azure.Functions.Worker.FunctionParameter>.Empty"
+            : $"global::System.Collections.Immutable.ImmutableArray.Create({string.Join(", ", parameterInitializers)})";
 
     private static string BuildBindingsInitializer(List<string> keyValueInitializers) =>
         keyValueInitializers.Count == 0
