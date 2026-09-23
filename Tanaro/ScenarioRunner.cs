@@ -30,16 +30,16 @@ public sealed class ScenarioRunner
         ScenarioResult<TResult> result;
         if (exception is not null)
         {
-            result = new ScenarioResult<TResult>(default, exception, invoked);
+            result = new ScenarioResult<TResult>(default, exception, invoked, scenario.FunctionContext);
         }
         else if (!invoked)
         {
-            result = new ScenarioResult<TResult>(default, null, invoked: false);
+            result = new ScenarioResult<TResult>(default, null, invoked: false, scenario.FunctionContext);
         }
         else
         {
             OutputBindingCapture.Capture(definition, scenario.Result, scenario.DummyFunctionContext);
-            result = new ScenarioResult<TResult>(scenario.Result, null, invoked: true);
+            result = new ScenarioResult<TResult>(scenario.Result, null, invoked: true, scenario.FunctionContext);
         }
 
         if (!scenario.ExpectsFailure)
@@ -55,7 +55,7 @@ public sealed class ScenarioRunner
         where TScenario : Scenario<TFunction>
     {
         var (scenario, exception, invoked) = await RunCore<TFunction, TScenario>(configure, createScenario, definition);
-        var result = new ScenarioResult(exception, invoked);
+        var result = new ScenarioResult(exception, invoked, scenario.FunctionContext);
 
         if (!scenario.ExpectsFailure)
         {
