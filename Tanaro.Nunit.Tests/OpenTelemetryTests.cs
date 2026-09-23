@@ -2,7 +2,6 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Azure.Functions.Worker.OpenTelemetry;
 using Microsoft.Extensions.DependencyInjection;
-using OpenTelemetry;
 using OpenTelemetry.Trace;
 using System.Diagnostics;
 
@@ -26,10 +25,7 @@ public class OpenTelemetryTests
         var builder = FunctionsApplication.CreateBuilder([]);
         builder.Services
             .AddOpenTelemetry()
-            .UseFunctionsWorkerDefaults()
-            .ConfigureResource(_ => { })
-            .WithTracing(c => c
-                .AddSource(Metrics.TelemetryName));
+            .UseFunctionsWorkerDefaults();
         await using var host = FunctionHost.For(builder, []);
 
         // Without this line the Activity will not be started and the TraceContext will be empty.
