@@ -135,7 +135,7 @@ public class ScenarioMethodGenerator : IIncrementalGenerator
                 returnTypeArgument,
                 string.Join(", ", signatureParts),
                 string.Join(", ", argumentParts),
-                $"global::System.Collections.Immutable.ImmutableArray.Create({string.Join(", ", parameterInitializers)})",
+                BuildParametersInitializer(parameterInitializers),
                 BuildBindingsInitializer(inputBindingInitializers),
                 BuildBindingsInitializer(outputBindingInitializers)));
         }
@@ -193,6 +193,11 @@ public class ScenarioMethodGenerator : IIncrementalGenerator
         return name.Length == 0 ? name : char.ToLowerInvariant(name[0]) + name.Substring(1);
     }
 
+    private static string BuildParametersInitializer(List<string> parameterInitializers) =>
+        parameterInitializers.Count == 0
+            ? "global::System.Collections.Immutable.ImmutableArray<global::Microsoft.Azure.Functions.Worker.FunctionParameter>.Empty"
+            : $"global::System.Collections.Immutable.ImmutableArray.Create({string.Join(", ", parameterInitializers)})";
+
     private static string BuildBindingsInitializer(List<string> keyValueInitializers) =>
         keyValueInitializers.Count == 0
             ? "global::System.Collections.Immutable.ImmutableDictionary<string, global::Microsoft.Azure.Functions.Worker.BindingMetadata>.Empty"
@@ -215,6 +220,12 @@ public class ScenarioMethodGenerator : IIncrementalGenerator
         return returnType;
     }
 
+    // Includes the '?' modifier so a nullable-returning function's TResult carries that nullability all the way
+    // through Scenario<TFunction, TResult>/ScenarioResult<TResult>, instead of collapsing to the same TResult as a
+    // non-nullable-returning function.
+    private static readonly SymbolDisplayFormat ReturnTypeFormat =
+        SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+
     private static (ReturnShape Shape, string? ReturnTypeArgument) GetReturnShape(ITypeSymbol returnType)
     {
         if (returnType.SpecialType == SpecialType.System_Void)
@@ -226,11 +237,11 @@ public class ScenarioMethodGenerator : IIncrementalGenerator
             named.ContainingNamespace.ToDisplayString() == "System.Threading.Tasks")
         {
             return named.IsGenericType
-                ? (ReturnShape.TaskOfValue, named.TypeArguments[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
+                ? (ReturnShape.TaskOfValue, named.TypeArguments[0].ToDisplayString(ReturnTypeFormat))
                 : (ReturnShape.Task, null);
         }
 
-        return (ReturnShape.Value, returnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
+        return (ReturnShape.Value, returnType.ToDisplayString(ReturnTypeFormat));
     }
 
     private static string SanitizeIdentifier(string name)

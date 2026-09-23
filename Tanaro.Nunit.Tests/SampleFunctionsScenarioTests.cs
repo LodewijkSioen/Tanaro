@@ -145,7 +145,7 @@ public class SampleFunctionsScenarioTests
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
         var result = await AppUnderTest.Host.Run<SampleFunctions>().SampleTaskOfValue(s =>
-            s.Execute([eventData]).WithContext(ctx => ctx.Items["shortCircuit"] = true));
+            s.Execute([eventData]).WithContext(ctx => ctx.Items["shortCircuit"] = true).ExpectFailure());
 
         Assert.That(result.Invoked, Is.False);
         Assert.That(result.Succeeded, Is.False);
@@ -258,11 +258,10 @@ public class SampleFunctionsScenarioTests
     {
         var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
-        var result = await AppUnderTest.Host.Run<SampleFunctions>().SampleThatThrows(s => s.Execute([eventData]));
+        var result = await AppUnderTest.Host.Run<SampleFunctions>().SampleThatThrows(s => s.Execute([eventData]).ExpectFailure());
 
         Assert.That(result.Faulted, Is.True);
         Assert.That(result.Invoked, Is.True);
         Assert.That(result.Exception, Is.InstanceOf<InvalidOperationException>().And.Message.EqualTo("Boom"));
     }
 }
-

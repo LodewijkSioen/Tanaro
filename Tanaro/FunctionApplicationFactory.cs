@@ -3,17 +3,10 @@ using Microsoft.Extensions.Hosting;
 
 namespace Tanaro;
 
-public interface IFunctionApplicationFactory : IDisposable, IAsyncDisposable
+internal static class FunctionApplicationFactory
 {
-    IServiceProvider Services { get; }
-}
-
-public class FunctionApplicationFactory<T> : IFunctionApplicationFactory
-    where T : class
-{
-    private readonly IHost _host;
-
-    public FunctionApplicationFactory(Action<IHostBuilder> configuration, IEnumerable<KeyValuePair<string, string?>> settings)
+    public static IHost CreateHost<T>(Action<IHostBuilder> configuration, IEnumerable<KeyValuePair<string, string?>> settings)
+        where T : class
     {
         var factory = HostFactoryResolver.ResolveHostFactory(typeof(T).Assembly, hostBuilder =>
         {
@@ -26,12 +19,6 @@ public class FunctionApplicationFactory<T> : IFunctionApplicationFactory
             throw new InvalidOperationException($"Could not find an entry point on the assembly of {typeof(T)}.");
         }
 
-        _host = factory([]);
+        return factory([]);
     }
-
-    public IServiceProvider Services => _host.Services;
-
-    public void Dispose() => _host.Dispose();
-
-    public ValueTask DisposeAsync() => _host is IAsyncDisposable disposable ? disposable.DisposeAsync() : new(Task.Run(_host.Dispose));
 }

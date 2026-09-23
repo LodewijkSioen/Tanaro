@@ -77,7 +77,15 @@ public class SampleFunctions(ILogger<SampleFunctions> logger)
     [Function("SampleThatThrows")]
     public string ThatThrows([EventHubTrigger("hub")] EventData[] eventData) =>
         throw new InvalidOperationException("Boom");
+
+    [Function("WithNonNullableComplexResult")]
+    public ComplexResult WithNonNullableComplexResult() => new("test", 123);
+
+    [Function("WithNullableComplexResult")]
+    public ComplexResult? WithNullableComplexResult() => null;
 }
+
+public record ComplexResult(string Name, int Number);
 
 public class MultiOutputResult
 {

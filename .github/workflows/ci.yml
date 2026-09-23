@@ -25,8 +25,11 @@ jobs:
       - name: Build
         run: dotnet build Tanaro.slnx -c Release --no-restore
 
-      - name: Test
+      - name: Test (NUnit)
         run: dotnet test Tanaro.Nunit.Tests/Tanaro.Nunit.Tests.csproj -c Release --no-build
+
+      - name: Test (xUnit)
+        run: dotnet test Tanaro.XUnit.Tests/Tanaro.XUnit.Tests.csproj -c Release --no-build
 
       - name: Pack
         run: dotnet pack Tanaro/Tanaro.csproj -c Release --no-build -o artifacts/packages

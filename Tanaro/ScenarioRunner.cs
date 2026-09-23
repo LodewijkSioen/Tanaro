@@ -27,27 +27,42 @@ public sealed class ScenarioRunner
     {
         var (scenario, exception, invoked) = await RunCore<TFunction, TScenario>(configure, createScenario, definition);
 
+        ScenarioResult<TResult> result;
         if (exception is not null)
         {
-            return new ScenarioResult<TResult>(default, exception, invoked);
+            result = new ScenarioResult<TResult>(default, exception, invoked);
         }
-
-        if (!invoked)
+        else if (!invoked)
         {
-            return new ScenarioResult<TResult>(default, null, invoked: false);
+            result = new ScenarioResult<TResult>(default, null, invoked: false);
+        }
+        else
+        {
+            OutputBindingCapture.Capture(definition, scenario.Result, scenario.DummyFunctionContext);
+            result = new ScenarioResult<TResult>(scenario.Result, null, invoked: true);
         }
 
-        OutputBindingCapture.Capture(definition, scenario.Result, scenario.DummyFunctionContext);
+        if (!scenario.ExpectsFailure)
+        {
+            result.EnsureSuccess();
+        }
 
-        return new ScenarioResult<TResult>(scenario.Result, null, invoked: true);
+        return result;
     }
 
     public async Task<ScenarioResult> RunScenario<TFunction, TScenario>(Action<TScenario> configure, Func<DummyFunctionContext, TScenario> createScenario, FunctionDefinition definition)
         where TFunction : class
         where TScenario : Scenario<TFunction>
     {
-        var (_, exception, invoked) = await RunCore<TFunction, TScenario>(configure, createScenario, definition);
-        return new ScenarioResult(exception, invoked);
+        var (scenario, exception, invoked) = await RunCore<TFunction, TScenario>(configure, createScenario, definition);
+        var result = new ScenarioResult(exception, invoked);
+
+        if (!scenario.ExpectsFailure)
+        {
+            result.EnsureSuccess();
+        }
+
+        return result;
     }
 
     private async Task<(TScenario Scenario, Exception? Exception, bool Invoked)> RunCore<TFunction, TScenario>(Action<TScenario> configure, Func<DummyFunctionContext, TScenario> createScenario, FunctionDefinition definition)

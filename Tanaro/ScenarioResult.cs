@@ -12,25 +12,33 @@ public sealed class ScenarioResult<TResult>
 {
     internal ScenarioResult(TResult? value, Exception? exception, bool invoked)
     {
-        Value = value;
+        // Suppressed: before a successful invocation there is no value yet, regardless of TResult's own nullability.
+        Value = value!;
         Exception = exception;
         Invoked = invoked;
     }
 
-    public TResult? Value { get; }
+    // Typed as bare TResult (not TResult?) so a nullable-returning function's TResult already carries the '?' -
+    // callers get a real nullable-dereference warning for a legitimate null result, instead of a blanket promise.
+    public TResult Value
+    {
+        get
+        {
+            EnsureSuccess();
+            return field;
+        }
+    }
 
     public Exception? Exception { get; }
 
     // True once the function method itself started running, even if it then threw.
     public bool Invoked { get; }
 
-    [MemberNotNullWhen(true, nameof(Value))]
     public bool Succeeded => Invoked && Exception is null;
 
     [MemberNotNullWhen(true, nameof(Exception))]
     public bool Faulted => Exception is not null;
 
-    [MemberNotNull(nameof(Value))]
     public void EnsureSuccess()
     {
         if (Faulted) throw Exception;

@@ -17,8 +17,21 @@ analyzer reference required.
 
 ## Quick start
 
+`Program` from top-level statements is `internal`, so your Function App needs to expose it to the test
+project via `InternalsVisibleTo`:
+
+```xml
+<ItemGroup>
+  <InternalsVisibleTo Include="YourTestProject" />
+</ItemGroup>
+```
+
 Flag your test fixture with `[FunctionUnderTest<T>]` for every function class you want to exercise, and start
-the host from your Function App's `Program`:
+the host from your Function App's `Program`.
+
+### NUnit
+
+Building the FunctionHost is expensive so you only want to do it once per test fixture. The following pattern allows you to reuse your host across tests.
 
 ```csharp
 [SetUpFixture]
@@ -46,10 +59,9 @@ public async Task CountsEvents()
 {
     var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
 
-    var result = await AppUnderTest.Host.For<SampleFunctions>()
+    var result = await AppUnderTest.Host.Run<SampleFunctions>()
         .SampleTaskOfValue(s => s.Execute([eventData]));
 
-    result.EnsureSuccess();
     Assert.That(result.Value, Is.EqualTo(1));
 }
 ```
@@ -57,8 +69,47 @@ public async Task CountsEvents()
 `Execute(...)` records the call; `WithContext(ctx => ...)` lets you inspect or mutate the `FunctionContext`
 (bindings, items, retry context, ...) before the function actually runs.
 
-## Name
-[Tanaro](https://en.wikipedia.org/wiki/Tanaro) is the river running trough the city of Alba, Italy.
+The function under test is expected to succeed by default - a thrown exception or a middleware short-circuit
+fails the scenario immediately via `EnsureSuccess()`. If you're deliberately testing a failure path, opt out
+with `s.Execute(...).ExpectFailure()` and inspect `result.Faulted`/`result.Exception`/`result.Invoked` yourself.
+
+### xUnit
+
+xUnit doesn't have `[SetUpFixture]`/`[OneTimeSetUp]`, so start the host in an `IAsyncDisposable` fixture and
+share it across tests with an `[assembly: AssemblyFixture(...)]`:
+
+```csharp
+[assembly: AssemblyFixture(typeof(Tanaro.XUnit.Tests.AppFixture))]
+
+namespace Tanaro.XUnit.Tests;
+
+[FunctionUnderTest<SampleFunctions>]
+public class AppFixture : IAsyncDisposable
+{
+    public FunctionHost Host { get; } = FunctionHost.For<Program>(_ => { }, []);
+
+    public ValueTask DisposeAsync() => Host.DisposeAsync();
+}
+```
+
+Inject the fixture into your test class and call the generated scenario methods the same way:
+
+```csharp
+using Tanaro.Generated;
+
+public class SampleFunctionsScenarioTests(AppFixture fixture)
+{
+    [Fact]
+    public async Task TaskOfValueShape()
+    {
+        var eventData = EventHubsModelFactory.EventData(BinaryData.FromString("x"));
+
+        var result = await fixture.Host.Run<SampleFunctions>().SampleTaskOfValue(s => s.Execute([eventData]));
+
+        Assert.Equal(1, result.Value);
+    }
+}
+```
 
 ## AI Stance
 Tanaro isn't vibe-coded. We use a mix of regular coding and agent-assisted work, but people make the design decisions. Every change is reviewed, understood, and validated by a person before it lands.
@@ -68,3 +119,9 @@ We don't mind contributors using agents either, as long as their contributions f
 Please don't submit AI slop. Generic, unreviewed, or needlessly verbose generated issues, pull request descriptions, or review comments will be immediately closed when they create more work than value.
 
 (Generously stolen from [Oskar Dudycz](https://lnkd.in/p/eqt5Yxct))
+
+## Name
+[Tanaro](https://en.wikipedia.org/wiki/Tanaro) is the river running trough the city of Alba, Italy. 
+Since this project is inspired by the [Alba](https://github.com/JasperFx/alba) testing framework, that seemed like a good name.
+
+And yes, I know that library is named after Alba, Missouri. 

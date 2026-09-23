@@ -9,6 +9,7 @@ public class EventHubFunction(ILogger<EventHubFunction> logger)
     [Function("EventHubFunction")]
     public string Run([EventHubTrigger("hub")] EventData[] eventData, FunctionContext context)
     {
+        logger.LogInformation("Function was called at {time}", DateTimeOffset.UtcNow);
         var data = eventData.Select(e => e.EventBody.ToString());
         return string.Join(',', data);
     }

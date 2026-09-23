@@ -17,6 +17,15 @@ public class Scenario<TFunction>(DummyFunctionContext functionContext)
 
     internal Func<TFunction, FunctionContext, Task>? Invocation { get; private protected set; }
 
+    // Opts out of the automatic EnsureSuccess() call ScenarioRunner otherwise makes after invocation.
+    internal bool ExpectsFailure { get; private set; }
+
+    public Scenario<TFunction> ExpectFailure()
+    {
+        ExpectsFailure = true;
+        return this;
+    }
+
     protected void Record(Func<TFunction, FunctionContext, Task> invocation)
     {
         if (Invocation is not null)
@@ -95,6 +104,12 @@ public class Scenario<TFunction, TResult>(DummyFunctionContext functionContext) 
     public new Scenario<TFunction, TResult> WithContext(Action<FunctionContext> configure)
     {
         base.WithContext(configure);
+        return this;
+    }
+
+    public new Scenario<TFunction, TResult> ExpectFailure()
+    {
+        base.ExpectFailure();
         return this;
     }
 }

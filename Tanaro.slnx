@@ -2,5 +2,6 @@
   <Project Path="Tanaro.DemoFunction/Tanaro.DemoFunction.csproj" />
   <Project Path="Tanaro.Generators/Tanaro.Generators.csproj" />
   <Project Path="Tanaro.Nunit.Tests/Tanaro.Nunit.Tests.csproj" />
+  <Project Path="Tanaro.XUnit.Tests/Tanaro.XUnit.Tests.csproj" />
   <Project Path="Tanaro/Tanaro.csproj" />
 </Solution>
