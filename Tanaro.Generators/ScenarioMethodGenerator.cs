@@ -284,7 +284,11 @@ public class ScenarioMethodGenerator : IIncrementalGenerator
             _ => throw new NotSupportedException($"Unsupported return shape: {method.ReturnShape}"),
         };
 
-        var scenarioTypeName = $"{method.FunctionName}Scenario";
+        // Prefixed with the declaring type so two different function classes exposing the same
+        // [Function("Name")] (legal across separate classes) don't emit colliding type names.
+        var declaringTypeIdentifier = SanitizeIdentifier(method.DeclaringTypeFullyQualifiedName.Replace("global::", string.Empty));
+        var scenarioTypeName = $"{declaringTypeIdentifier}_{method.FunctionName}Scenario";
+        var extensionsTypeName = $"{declaringTypeIdentifier}_{method.FunctionName}Extensions";
         var hostReturnType = method.ReturnShape is ReturnShape.Value or ReturnShape.TaskOfValue
             ? $"global::System.Threading.Tasks.Task<global::Tanaro.ScenarioResult<{method.ReturnTypeFullyQualifiedName}>>"
             : "global::System.Threading.Tasks.Task<global::Tanaro.ScenarioResult>";
@@ -308,7 +312,7 @@ public class ScenarioMethodGenerator : IIncrementalGenerator
             }
         }
 
-        public static class {{method.FunctionName}}Extensions
+        public static class {{extensionsTypeName}}
         {
             public static {{hostReturnType}} {{method.FunctionName}}(this global::Tanaro.FunctionScenarios<{{method.DeclaringTypeFullyQualifiedName}}> s, global::System.Action<{{scenarioTypeName}}> configure)
                 => s.Host.Runner.RunScenario<{{runScenarioTypeArguments}}>(configure, ctx => new {{scenarioTypeName}}(ctx), {{functionDefinition}});
