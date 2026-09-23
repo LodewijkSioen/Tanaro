@@ -62,13 +62,16 @@ public async Task CountsEvents()
     var result = await AppUnderTest.Host.Run<SampleFunctions>()
         .SampleTaskOfValue(s => s.Execute([eventData]));
 
-    result.EnsureSuccess();
     Assert.That(result.Value, Is.EqualTo(1));
 }
 ```
 
 `Execute(...)` records the call; `WithContext(ctx => ...)` lets you inspect or mutate the `FunctionContext`
 (bindings, items, retry context, ...) before the function actually runs.
+
+The function under test is expected to succeed by default - a thrown exception or a middleware short-circuit
+fails the scenario immediately via `EnsureSuccess()`. If you're deliberately testing a failure path, opt out
+with `s.Execute(...).ExpectFailure()` and inspect `result.Faulted`/`result.Exception`/`result.Invoked` yourself.
 
 ### xUnit
 

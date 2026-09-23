@@ -17,7 +17,17 @@ public sealed class ScenarioResult<TResult>
         Invoked = invoked;
     }
 
-    public TResult? Value { get; }
+    public TResult? Value
+    {
+        get
+        {
+            if (Faulted) throw Exception;
+            if (!Invoked) throw new FunctionNotInvokedException();
+
+            return field;
+        }
+        private set;
+    }
 
     public Exception? Exception { get; }
 
