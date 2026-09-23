@@ -5,7 +5,6 @@ using Microsoft.Azure.Functions.Worker.Invocation;
 using Microsoft.Azure.Functions.Worker.Middleware;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using OpenTelemetry.Trace;
 
 namespace Tanaro;
 
@@ -70,7 +69,7 @@ public sealed class ScenarioRunner
         where TScenario : Scenario<TFunction>
     {
         using var scope = _services.CreateScope();
-        using var rootActivity = StartActivity(scope.ServiceProvider);
+        using var rootActivity = Metrics.Source.StartActivity();
 
         var scenario = createScenario(BuildFunctionContext(rootActivity, scope.ServiceProvider, definition));
         configure(scenario);
@@ -117,14 +116,7 @@ public sealed class ScenarioRunner
             // The SDK's built-in OutputBindingsMiddleware always runs and needs an internal feature Tanaro doesn't populate; harmless to ignore.
         }
     }
-
-    private static Activity? StartActivity(IServiceProvider services)
-    {
-        // Need to resolve the TraceProvider once to kickstart tracing
-        _ = services.GetService<TracerProvider>();
-        return Metrics.Source.StartActivity();
-    }
-
+    
     // Lets a consumer-registered ILoggerProvider (supplying its own log capture) correlate entries to this invocation.
     private static IDisposable? BeginInvocationScope(IServiceProvider services, string invocationId) =>
         services.GetRequiredService<ILoggerFactory>().CreateLogger("Tanaro").BeginScope(new Dictionary<string, object?>
