@@ -1,6 +1,5 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
-using Tanaro.Generated;
 
 namespace Tanaro.XUnit.Tests;
 

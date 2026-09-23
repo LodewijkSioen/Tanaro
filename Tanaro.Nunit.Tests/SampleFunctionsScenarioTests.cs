@@ -2,7 +2,6 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Tanaro.DemoFunction;
-using Tanaro.Generated;
 
 namespace Tanaro.Nunit.Tests;
 

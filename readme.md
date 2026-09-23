@@ -52,7 +52,7 @@ The generator emits one scenario method per `[Function("Name")]` method on `Samp
 function. Call it to invoke the function through DI and assert on its return value:
 
 ```csharp
-using Tanaro.Generated;
+using Tanaro.DemoFunction;
 
 [Test]
 public async Task CountsEvents()
@@ -95,7 +95,7 @@ public class AppFixture : IAsyncDisposable
 Inject the fixture into your test class and call the generated scenario methods the same way:
 
 ```csharp
-using Tanaro.Generated;
+using Tanaro.DemoFunction;
 
 public class SampleFunctionsScenarioTests(AppFixture fixture)
 {

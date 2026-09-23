@@ -12,6 +12,7 @@ internal enum ReturnShape
 internal sealed record FunctionMethodModel(
     string DeclaringTypeFullyQualifiedName,
     string DeclaringTypeName,
+    string DeclaringTypeNamespace,
     string MethodName,
     string FunctionName,
     string RawFunctionName,

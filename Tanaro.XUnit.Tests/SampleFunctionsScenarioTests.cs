@@ -1,6 +1,5 @@
 using Azure.Messaging.EventHubs;
 using Tanaro.DemoFunction;
-using Tanaro.Generated;
 
 namespace Tanaro.XUnit.Tests;
 
