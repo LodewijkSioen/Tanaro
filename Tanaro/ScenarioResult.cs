@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Azure.Functions.Worker;
 
 namespace Tanaro;
 
@@ -10,12 +11,13 @@ public class FunctionNotInvokedException : Exception;
 /// </summary>
 public sealed class ScenarioResult<TResult>
 {
-    internal ScenarioResult(TResult? value, Exception? exception, bool invoked)
+    internal ScenarioResult(TResult? value, Exception? exception, bool invoked, FunctionContext functionContext)
     {
         // Suppressed: before a successful invocation there is no value yet, regardless of TResult's own nullability.
         Value = value!;
         Exception = exception;
         Invoked = invoked;
+        FunctionContext = functionContext;
     }
 
     // Typed as bare TResult (not TResult?) so a nullable-returning function's TResult already carries the '?' -
@@ -34,6 +36,9 @@ public sealed class ScenarioResult<TResult>
     // True once the function method itself started running, even if it then threw.
     public bool Invoked { get; }
 
+    // Always populated - even a short-circuited or failed invocation still ran through a real FunctionContext.
+    public FunctionContext FunctionContext { get; }
+
     public bool Succeeded => Invoked && Exception is null;
 
     [MemberNotNullWhen(true, nameof(Exception))]
@@ -41,7 +46,10 @@ public sealed class ScenarioResult<TResult>
 
     public void EnsureSuccess()
     {
-        if (Faulted) throw Exception;
+        if (Faulted)
+        {
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(Exception).Throw();
+        }
         if (!Succeeded) throw new FunctionNotInvokedException();
     }
 }
@@ -52,16 +60,20 @@ public sealed class ScenarioResult<TResult>
 /// </summary>
 public sealed class ScenarioResult
 {
-    internal ScenarioResult(Exception? exception, bool invoked)
+    internal ScenarioResult(Exception? exception, bool invoked, FunctionContext functionContext)
     {
         Exception = exception;
         Invoked = invoked;
+        FunctionContext = functionContext;
     }
 
     public Exception? Exception { get; }
 
     // True once the function method itself started running, even if it then threw.
     public bool Invoked { get; }
+
+    // Always populated - even a short-circuited or failed invocation still ran through a real FunctionContext.
+    public FunctionContext FunctionContext { get; }
 
     public bool Succeeded => Invoked && Exception is null;
 

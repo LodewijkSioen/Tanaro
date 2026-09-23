@@ -1,5 +1,4 @@
 using Tanaro.DemoFunction;
-using Tanaro.Generated;
 
 namespace Tanaro.Nunit.Tests;
 
