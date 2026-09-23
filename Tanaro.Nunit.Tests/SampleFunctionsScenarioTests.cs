@@ -265,4 +265,3 @@ public class SampleFunctionsScenarioTests
         Assert.That(result.Exception, Is.InstanceOf<InvalidOperationException>().And.Message.EqualTo("Boom"));
     }
 }
-
