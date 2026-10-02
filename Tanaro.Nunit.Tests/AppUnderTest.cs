@@ -7,6 +7,11 @@ namespace Tanaro.Nunit.Tests;
 [SetUpFixture]
 [FunctionUnderTest<EventHubFunction>]
 [FunctionUnderTest<SampleFunctions>]
+[FunctionUnderTest<TimerFunction>]
+[FunctionUnderTest<QueueFunction>]
+[FunctionUnderTest<BlobFunction>]
+[FunctionUnderTest<ServiceBusFunction>]
+[FunctionUnderTest<CosmosFunction>]
 public class AppUnderTest
 {
     public static FunctionHost Host { get; private set; } = null!;
