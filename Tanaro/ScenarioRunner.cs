@@ -68,7 +68,7 @@ public sealed class ScenarioRunner
         where TFunction : class
         where TScenario : Scenario<TFunction>
     {
-        using var scope = _services.CreateScope();
+        await using var scope = _services.CreateAsyncScope();
         using var rootActivity = Metrics.Source.StartActivity();
 
         var scenario = createScenario(BuildFunctionContext(rootActivity, scope.ServiceProvider, definition));

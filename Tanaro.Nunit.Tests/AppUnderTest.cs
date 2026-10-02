@@ -28,8 +28,8 @@ public class AppUnderTest
     }
 
     [OneTimeTearDown]
-    public void TearDown()
+    public async Task TearDown()
     {
-        Host.Dispose();
+        await Host.DisposeAsync();
     }
 }

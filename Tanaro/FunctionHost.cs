@@ -39,7 +39,14 @@ public class FunctionHost
 
     public void Dispose()
     {
-        _host.Dispose();
+        if (_host is IAsyncDisposable asyncDisposable)
+        {
+            asyncDisposable.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        }
+        else
+        {
+            _host.Dispose();
+        }
     }
 
     public ValueTask DisposeAsync()
